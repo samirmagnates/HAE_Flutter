@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hea/Screen/Login.dart';
+import 'package:hea/Screen/Home.dart';
+import 'package:hea/Utils/AppUtils.dart';
+import 'package:screen/screen.dart';
 
 void main() => runApp(MyApp());
 
@@ -6,6 +10,8 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+
+    Screen.keepOn(true);
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
@@ -18,9 +24,15 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        //primarySwatch: Colors.blue,
+        primaryColor: ThemeColor.theme_blue
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      debugShowCheckedModeBanner: false,
+      home: Login(),
+      routes: <String,WidgetBuilder>{
+        AppRoute.routeLoginScreen:(BuildContext context) => Login(),
+        AppRoute.routeHomeScreen:(BuildContext context) => Home(),
+       },
     );
   }
 }
