@@ -3,18 +3,32 @@ import 'package:hea/Screen/Login.dart';
 import 'package:hea/Screen/Home.dart';
 import 'package:hea/Utils/AppUtils.dart';
 import 'package:screen/screen.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
 
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
+    TargetPlatform _platform;
 
+    if(Platform.isIOS){
+      _platform = TargetPlatform.iOS;
+    } else{
+      _platform = TargetPlatform.android;
+    }
     Screen.keepOn(true);
+    SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
+          platform: _platform ?? Theme.of(context).platform,
         // This is the theme of your application.
         //
         // Try running your application with "flutter run". You'll see the

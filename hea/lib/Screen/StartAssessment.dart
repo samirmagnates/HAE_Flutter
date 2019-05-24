@@ -1,9 +1,14 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hea/Model/AssessmentTasks.dart';
 import 'package:hea/Model/AssessmentMetaData.dart';
 import 'package:hea/Utils/AppUtils.dart';
 import 'package:hea/Model/QuestionOptions.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:hea/Screen/AudioPlayer.dart';
+import 'package:hea/Screen/VideoPlayer.dart';
+
 class StartAssessment extends StatefulWidget {
   @override
 
@@ -16,7 +21,7 @@ class StartAssessment extends StatefulWidget {
 
 class _StartAssessmentState extends State<StartAssessment> {
 
-    static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();  
+    static final GlobalKey<ScaffoldState> _scaffoldKeyStartAssess = new GlobalKey<ScaffoldState>();  
     TextEditingController txtAnswer = TextEditingController();
     List<AssessmentTasks> arrAssessmentTask;
     AssessmentMetaData assessmentMetaData;
@@ -26,6 +31,8 @@ class _StartAssessmentState extends State<StartAssessment> {
     int currentTaskIndex;
     String noDataMessage;
     String candidateName = '';
+    bool _isEndAssessmentTapped = false;
+    bool _isLoading = false;
 
   @override
   void initState() {
@@ -37,7 +44,6 @@ class _StartAssessmentState extends State<StartAssessment> {
       if(widget.responsData['assessment_meta'] != null){
         Map meta = widget.responsData['assessment_meta'];
         this.assessmentMetaData = AssessmentMetaData.fromJSON(meta);
-
         candidateName = this.assessmentMetaData.candidateName != null? this.assessmentMetaData.candidateName : '';
       }
 
@@ -60,9 +66,23 @@ class _StartAssessmentState extends State<StartAssessment> {
   }
 
   @override
+   void setState(fn) {
+    if(mounted){
+      super.setState(fn);
+    }
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    txtAnswer.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
+      key: _scaffoldKeyStartAssess,
       appBar: AppBar(
         leading:Container(
           padding: EdgeInsets.only(right: 10),
@@ -70,76 +90,83 @@ class _StartAssessmentState extends State<StartAssessment> {
           height: 35,
           child: IconButton(
             icon: Image.asset(ThemeImage.image_back),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.pop(context),//Navigator.of(context).pop(),
         )
         ), 
         title: FittedBox(
           child: Text(
-                          AppConstant.kTitle_AssessmentHeader,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: ThemeFont.font_pourceSanPro,
-                            fontSize: 20.0,
-                            fontWeight: FontWeight.bold
-                          ),
-                          textAlign: TextAlign.right,
-                        ),
+            this.assessmentMetaData != null && this.assessmentMetaData.assessmentName != null?this.assessmentMetaData.assessmentName:AppConstant.kTitle_AssessmentHeader,
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: ThemeFont.font_pourceSanPro,
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold
+            ),
+            textAlign: TextAlign.right,
+          ),
         ),
       ),
       body: SafeArea(
         child: Container(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: <Widget>[
-              Container(
-                width: MediaQuery.of(context).size.width,
-                height: 50,
-                decoration: BoxDecoration(
-                  color:ThemeColor.theme_dark 
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 15.0),
-                    child: Text(
-                          candidateName,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: ThemeFont.font_pourceSanPro,
-                            fontSize: 20.0,
-                            fontWeight: FontWeight.bold
-                          ),
-                          textAlign: TextAlign.right,
-                        ),
-                  )
-                ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    width: MediaQuery.of(context).size.width,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color:ThemeColor.theme_dark 
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 15.0),
+                        child: Text(
+                              candidateName,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: ThemeFont.font_pourceSanPro,
+                                fontSize: 20.0,
+                                fontWeight: FontWeight.bold
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                      )
+                    ),
+                  ),
+                  this.currentAssessmentTask != null? getQuestionWidget():Container()
+                ],
               ),
-              this.currentAssessmentTask != null? getQuestionWidget():Container()
+              _isLoading?_showCircularProgress() : SizedBox(height: 0.0, width: 0.0,),
             ],
-          ),
+          )
       ),
       ),
-      bottomNavigationBar:this.currentAssessmentTask != null?Container(
+      bottomNavigationBar:this.currentAssessmentTask != null?SafeArea(
+        child:Container(
         height: 60,
         decoration: BoxDecoration(
           color: ThemeColor.theme_blue
         ),
         child: FlatButton(
-                          onPressed: () => _endAssessment(),
-                          child: Center(
-                            child: Text(
-                                AppConstant.kTitle_EndAssessment,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontFamily: ThemeFont.font_pourceSanPro,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 25.0),
-                              ),
-                          ),
-                        ),
+            onPressed: () => _isEndAssessmentTapped?null:_endAssessment(),
+            child: Center(
+              child: Text(
+                  AppConstant.kTitle_EndAssessment,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontFamily: ThemeFont.font_pourceSanPro,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 25.0),
+                ),
+            ),
+          ),
+       )
       ):SizedBox(
         width: 0.0,
         height: 0.0,
@@ -150,7 +177,17 @@ class _StartAssessmentState extends State<StartAssessment> {
   /// End Assessment will complete assessment
   /// change its status in database
   void _endAssessment(){
+    setState((){
+              _isLoading = true;
+              _isEndAssessmentTapped = true;
+       });
+    Navigator.of(context).pop();
+  }
 
+  Widget _showCircularProgress(){
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
+    } 
   }
 
 ///  Get Widget as per task type
@@ -176,6 +213,16 @@ class _StartAssessmentState extends State<StartAssessment> {
         case QuestionType.question_intgerAnswer:
           return questionTextInputAnswer();
         break;
+        case QuestionType.question_imageViewAnswer:
+          return questionImageViewAnswer();
+        break;
+        case QuestionType.question_audioPlayAnswer:
+          return questionAudioPlayerAnswer();
+        break; 
+        case QuestionType.question_videoPlayAnswer:
+          return questionVideoPlayerAnswer();
+        break; 
+        
         default:
           return Container(
               child: Center(
@@ -219,15 +266,15 @@ class _StartAssessmentState extends State<StartAssessment> {
         if(this.currentAssessmentTask.assessmentTaskType == QuestionType.question_textAnswer || this.currentAssessmentTask.assessmentTaskType == QuestionType.question_intgerAnswer){
             this.txtAnswer.text = '';
         }
-        setState(() {
-          if(this.currentTaskIndex < this.arrAssessmentTask.length){
+        if(this.currentTaskIndex < this.arrAssessmentTask.length){
+          setState(() {
             this.arrSelectedOption.clear();
             this.currentAssessmentTask = this.arrAssessmentTask[this.currentTaskIndex];
-          } else {
+          });
+          
+        } else {
 
         }
-          
-      });
   }
 
 
@@ -243,7 +290,7 @@ class _StartAssessmentState extends State<StartAssessment> {
         switch (this.currentAssessmentTask.assessmentTaskType) {
         case QuestionType.question_singleAnswer:
               if(arrSelectedOption == null || arrSelectedOption.isEmpty){
-                  AppUtils.showInSnackBar(_scaffoldKey, AppMessage.kError_QuestionSelecteError);
+                  AppUtils.showInSnackBar(_scaffoldKeyStartAssess, AppMessage.kError_QuestionSelecteError);
               } else {
                   List<String> arrCorrectAnswer =  this.currentAssessmentTask.assessmentTaskCorrectResponseId.split(',');
                   String result = 'pass';
@@ -264,7 +311,7 @@ class _StartAssessmentState extends State<StartAssessment> {
           break;
           case QuestionType.question_multipleAnswer:
               if(arrSelectedOption == null || arrSelectedOption.isEmpty){
-                  AppUtils.showInSnackBar(_scaffoldKey, AppMessage.kError_QuestionSelecteError);
+                  AppUtils.showInSnackBar(_scaffoldKeyStartAssess, AppMessage.kError_QuestionSelecteError);
               } else {
                   List<String> arrCorrectAnswer =  this.currentAssessmentTask.assessmentTaskCorrectResponseId.split(',');
                   String result = 'pass';
@@ -284,7 +331,7 @@ class _StartAssessmentState extends State<StartAssessment> {
           break;
           case QuestionType.question_boolAnswer:
               if(arrSelectedOption == null || arrSelectedOption.isEmpty){
-                  AppUtils.showInSnackBar(_scaffoldKey, AppMessage.kError_QuestionSelecteError);
+                  AppUtils.showInSnackBar(_scaffoldKeyStartAssess, AppMessage.kError_QuestionSelecteError);
               } else {
                   List<String> arrCorrectAnswer =  this.currentAssessmentTask.assessmentTaskCorrectResponseId.split(',');
                   String result = 'pass';
@@ -302,8 +349,8 @@ class _StartAssessmentState extends State<StartAssessment> {
               }
           break;
           case QuestionType.question_textAnswer:
-              if(arrSelectedOption == null || arrSelectedOption.isEmpty){
-                  AppUtils.showInSnackBar(_scaffoldKey, AppMessage.kError_QuestionSelecteError);
+              if(arrSelectedOption == null || arrSelectedOption.isEmpty || txtAnswer.text.isEmpty){
+                  AppUtils.showInSnackBar(_scaffoldKeyStartAssess, AppMessage.kError_QuestionInputError);
               } else {
                   String arrCorrectAnswer =  this.currentAssessmentTask.assessmentTaskCorrectResponseText;
                   String result = 'fail';
@@ -323,8 +370,8 @@ class _StartAssessmentState extends State<StartAssessment> {
               }
           break;
           case QuestionType.question_intgerAnswer:
-              if(arrSelectedOption == null || arrSelectedOption.isEmpty){
-                  AppUtils.showInSnackBar(_scaffoldKey, AppMessage.kError_QuestionSelecteError);
+              if(arrSelectedOption == null || arrSelectedOption.isEmpty || txtAnswer.text.isEmpty){
+                  AppUtils.showInSnackBar(_scaffoldKeyStartAssess, AppMessage.kError_QuestionInputError);
               } else {
                   String arrCorrectAnswer =  this.currentAssessmentTask.assessmentTaskCorrectResponseText;
                   String result = 'fail';
@@ -347,9 +394,6 @@ class _StartAssessmentState extends State<StartAssessment> {
         default:
       }
     }
-
-    
-    
   }
 
   /// ItemChnage method is array
@@ -375,6 +419,69 @@ class _StartAssessmentState extends State<StartAssessment> {
       
     });
   }
+
+  /// Pass button is use when task is senario base like image,audio,video
+  /// As per candidate answer assessor diside pass or fail
+  void clickPassFail(bool isPass){
+      String result = isPass?'pass':'fail';
+      if(this.currentAssessmentTask.result == null){
+        switch (this.currentAssessmentTask.assessmentTaskType) {
+        case QuestionType.question_imageViewAnswer:
+              setState(() {
+                  this.currentAssessmentTask.result = result;
+                  this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+              });
+              
+          break;
+          case QuestionType.question_audioPlayAnswer:
+              
+              setState(() {
+                  this.currentAssessmentTask.result = result;
+                  this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+              });
+          break;
+          case QuestionType.question_videoPlayAnswer:
+              setState(() {
+                  this.currentAssessmentTask.result = result;
+                  this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+              });
+          break;
+          case QuestionType.question_imageCaptureAnswer:
+              setState(() {
+                  this.currentAssessmentTask.result = result;
+                  this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+              });
+          break;
+          case QuestionType.question_audioRecordAnswer:
+              setState(() {
+                  this.currentAssessmentTask.result = result;
+                  this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+              });
+          break;
+          case QuestionType.question_videoRecordAnswer:
+              setState(() {
+                  this.currentAssessmentTask.result = result;
+                  this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+              });
+          break;
+
+        default:
+      }
+    }
+      this.currentTaskIndex++;
+      if(this.currentAssessmentTask.assessmentTaskType == QuestionType.question_textAnswer || this.currentAssessmentTask.assessmentTaskType == QuestionType.question_intgerAnswer){
+          this.txtAnswer.text = '';
+      }
+      if(this.currentTaskIndex < this.arrAssessmentTask.length){
+        setState(() {
+          this.arrSelectedOption.clear();
+          this.currentAssessmentTask = this.arrAssessmentTask[this.currentTaskIndex];
+        });
+        
+      } else {
+
+      }
+    }
 
   /// questionOptionAnswer return widget for single, multiple and bool selection type.
   /// it show lisview with option with single and multiple selection
@@ -486,7 +593,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                         delegate: SliverChildListDelegate(
                           [
                               SizedBox(
-                                height: 40,
+                                height: 30,
                                 child: Container(
                                 ),
                               ),
@@ -509,6 +616,11 @@ class _StartAssessmentState extends State<StartAssessment> {
                                             fontSize: 20.0),
                                       ),
                                   ),
+                                ),
+                              ),
+                              SizedBox(
+                                height: 20,
+                                child: Container(
                                 ),
                               ),
                           ]
@@ -867,7 +979,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                         delegate: SliverChildListDelegate(
                           [
                               SizedBox(
-                                height: 40,
+                                height: 30,
                                 child: Container(
                                 ),
                               ),
@@ -890,6 +1002,11 @@ class _StartAssessmentState extends State<StartAssessment> {
                                             fontSize: 20.0),
                                       ),
                                   ),
+                                )
+                              ),
+                              SizedBox(
+                                height: 20,
+                                child: Container(
                                 ),
                               ),
                           ]
@@ -906,4 +1023,500 @@ class _StartAssessmentState extends State<StartAssessment> {
     );
     
   }
+
+  /// Question ImageView return widget show image from url.
+  /// pass and fail button for submit resut and  go to next task
+
+  Widget questionImageViewAnswer(){
+
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+
+    Color select_color = ThemeColor.theme_blue;
+    Widget selected_icon = SizedBox(width: 0,height: 0,);
+    bool isEnable = true;
+    if(isSubmitAnswer == true){
+        isEnable = false;
+        if(this.currentAssessmentTask.result == 'pass'){
+          select_color = ThemeColor.ans_green;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_yes),
+          );
+        } else {
+          select_color = ThemeColor.ans_Red;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_no),
+          );
+        }
+
+    }
+    
+    return Expanded(
+      child: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+              SizedBox(
+                height: 10,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 15),
+                child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                    Text(
+                      'Scenario',
+                        style: TextStyle(
+                          color: ThemeColor.theme_blue,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                    Text(
+                      '${this.currentTaskIndex + 1}/${this.totalTask}',
+                        style: TextStyle(
+                          color: ThemeColor.theme_dark,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Expanded(
+                child: Container(
+                  child: CustomScrollView(
+                    slivers: <Widget>[
+                      SliverList(
+                        delegate: SliverChildListDelegate([
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 15),
+                            child: Text(
+                            this.currentAssessmentTask.prompt!=null?this.currentAssessmentTask.prompt:'',
+                            style: TextStyle(
+                              color: ThemeColor.theme_dark,
+                              fontFamily: ThemeFont.font_pourceSanPro,
+                              fontSize: 20.0,
+                              fontWeight: FontWeight.w600
+                            ),
+                            textAlign: TextAlign.left,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 20,
+                          ),
+                        ]),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: 100
+                                ),
+                                child: CachedNetworkImage(
+                                  imageUrl: this.currentAssessmentTask.assessmentTaskAssetUrl,
+                                  placeholder: (context,url) => Center(
+                                    child: new CircularProgressIndicator()
+                                  ),
+                                )
+                              )
+                            )
+                          ],
+                        ),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                              SizedBox(
+                                height: 30,
+                                child: Container(
+                                ),
+                              ),
+                              Container(
+                                height: 50,
+                                child: buttonPassFail()
+                              ),
+                              SizedBox(
+                                height: 20,
+                                child: Container(
+                                ),
+                              ),
+                          ]
+                        )
+                      )
+                    ],
+                  ),
+                  
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+    
+  }
+
+  /// Question ImageView return widget show image from url.
+  /// pass and fail button for submit resut and  go to next task
+
+  Widget questionAudioPlayerAnswer(){
+
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+
+    Color select_color = ThemeColor.theme_blue;
+    Widget selected_icon = SizedBox(width: 0,height: 0,);
+    bool isEnable = true;
+    if(isSubmitAnswer == true){
+        isEnable = false;
+        if(this.currentAssessmentTask.result == 'pass'){
+          select_color = ThemeColor.ans_green;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_yes),
+          );
+        } else {
+          select_color = ThemeColor.ans_Red;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_no),
+          );
+        }
+
+    }
+    
+    return Expanded(
+      child: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+              SizedBox(
+                height: 10,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 15),
+                child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                    Text(
+                      'Scenario',
+                        style: TextStyle(
+                          color: ThemeColor.theme_blue,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                    Text(
+                      '${this.currentTaskIndex + 1}/${this.totalTask}',
+                        style: TextStyle(
+                          color: ThemeColor.theme_dark,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Expanded(
+                child: Container(
+                  child: CustomScrollView(
+                    slivers: <Widget>[
+                      SliverList(
+                        delegate: SliverChildListDelegate([
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 15),
+                            child: Text(
+                            this.currentAssessmentTask.prompt!=null?this.currentAssessmentTask.prompt:'',
+                            style: TextStyle(
+                              color: ThemeColor.theme_dark,
+                              fontFamily: ThemeFont.font_pourceSanPro,
+                              fontSize: 20.0,
+                              fontWeight: FontWeight.w600
+                            ),
+                            textAlign: TextAlign.left,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 50,
+                          ),
+                        ]),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: 100
+                                ),
+                                child: CustomAudioPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl)
+                              )
+                            )
+                          ],
+                        ),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                              SizedBox(
+                                height: 30,
+                                child: Container(
+                                ),
+                              ),
+                              Container(
+                                height: 50,
+                                child: buttonPassFail()
+                              ),
+                              SizedBox(
+                                height: 20,
+                                child: Container(
+                                ),
+                              ),
+                          ]
+                        )
+                      )
+                    ],
+                  ),
+                  
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+    
+  }
+
+  /// Question ImageView return widget show image from url.
+  /// pass and fail button for submit resut and  go to next task
+
+  Widget questionVideoPlayerAnswer(){
+
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+
+    Color select_color = ThemeColor.theme_blue;
+    Widget selected_icon = SizedBox(width: 0,height: 0,);
+    bool isEnable = true;
+    if(isSubmitAnswer == true){
+        isEnable = false;
+        if(this.currentAssessmentTask.result == 'pass'){
+          select_color = ThemeColor.ans_green;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_yes),
+          );
+        } else {
+          select_color = ThemeColor.ans_Red;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_no),
+          );
+        }
+
+    }
+    
+    return Expanded(
+      child: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+              SizedBox(
+                height: 10,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 15),
+                child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                    Text(
+                      'Scenario',
+                        style: TextStyle(
+                          color: ThemeColor.theme_blue,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                    Text(
+                      '${this.currentTaskIndex + 1}/${this.totalTask}',
+                        style: TextStyle(
+                          color: ThemeColor.theme_dark,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Expanded(
+                child: Container(
+                  child: CustomScrollView(
+                    slivers: <Widget>[
+                      SliverList(
+                        delegate: SliverChildListDelegate([
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 15),
+                            child: Text(
+                            this.currentAssessmentTask.prompt!=null?this.currentAssessmentTask.prompt:'',
+                            style: TextStyle(
+                              color: ThemeColor.theme_dark,
+                              fontFamily: ThemeFont.font_pourceSanPro,
+                              fontSize: 20.0,
+                              fontWeight: FontWeight.w600
+                            ),
+                            textAlign: TextAlign.left,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 50,
+                          ),
+                        ]),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                            AspectRatio(
+                            aspectRatio: 1.5 / 1,
+                            child: new Container(
+                              decoration: new BoxDecoration(
+                                shape: BoxShape.rectangle,
+                              ),
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: 100
+                                ),
+                                child: customVideoPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl)
+                              )
+                              ),
+                            ),
+                            
+                          ],
+                        ),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                              SizedBox(
+                                height: 30,
+                                child: Container(
+                                ),
+                              ),
+                              Container(
+                                height: 50,
+                                child: buttonPassFail()
+                              ),
+                              SizedBox(
+                                height: 20,
+                                child: Container(
+                                ),
+                              ),
+                          ]
+                        )
+                      )
+                    ],
+                  ),
+                  
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+    
+  }
+
+  Widget buttonPassFail(){
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        Container(
+          width: 150,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(10.0)),
+            color: ThemeColor.theme_blue
+          ),
+          child: FlatButton(
+            onPressed: () => clickPassFail(false),
+            child: Center(
+              child: Text(
+                  AppConstant.kTitle_Fail,
+                  style: TextStyle(
+                      fontFamily: ThemeFont.font_pourceSanPro,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20.0),
+                ),
+            ),
+          ),
+        ),
+        Container(
+          width: 150,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(10.0)),
+            color: ThemeColor.theme_blue
+          ),
+          child: FlatButton(
+            onPressed: () => clickPassFail(true),
+            child: Center(
+              child: Text(
+                  AppConstant.kTitle_Pass,
+                  style: TextStyle(
+                      fontFamily: ThemeFont.font_pourceSanPro,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20.0),
+                ),
+            ),
+          ),
+        )
+      ],
+      
+    );
+  }
 }
+
+

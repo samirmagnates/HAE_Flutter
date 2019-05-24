@@ -7,7 +7,7 @@ class SharedPreferencesManager{
       return await prefs.get(key); 
   }
 
-  static Future setValue(String value , String key) async{
+  static void setValue(String value , String key) async{
     if(value != null && key != null){
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString(key, value);

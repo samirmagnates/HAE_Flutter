@@ -11,14 +11,11 @@
         android:name="io.flutter.app.FlutterApplication"
         android:theme="@style/Theme.AppCompat"
         android:icon="@mipmap/ic_launcher"
-        android:label="hea">
-        <activity android:name=".splashActivity"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+        android:label="HAE">
+        <!--<activity android:name=".splashActivity"-->
+            <!--android:theme="@style/Theme.AppCompat.Light.NoActionBar">-->
+
+        <!--</activity>-->
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -26,7 +23,10 @@
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
             android:windowSoftInputMode="adjustResize">
-
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
             <!--
                  This keeps the window background of the activity showing
                  until Flutter renders its first frame. It can be removed if
@@ -39,6 +39,9 @@
 
 
         </activity>
+        <!--<activity android:name=".SplashScreen" >-->
+            <!---->
+        <!--</activity>-->
     </application>
 
 </manifest>

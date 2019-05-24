@@ -30,6 +30,12 @@ dependencies:
   intl: ^0.15.7
   contacts_service: ^0.2.6
   add_2_calendar: ^1.2.2
+  permission_handler: '^3.0.0'
+  cached_network_image: ^0.8.0
+  audioplayer: ^0.5.2
+  chewie: ^0.9.7
+  video_player: ^0.10.0+2
+  auto_orientation: ^0.0.2
 
 
 dev_dependencies:
@@ -50,6 +56,10 @@ flutter:
     - assets/images/Yes.png
     - assets/images/Bluetick.png
     - assets/images/Backbutton.png
+    - assets/images/NoImageFound.png
+    - assets/images/pause.png
+    - assets/images/Play.png
+    - assets/images/Stop.png
     
     
     

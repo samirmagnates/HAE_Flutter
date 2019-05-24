@@ -11,24 +11,29 @@ class AppUtils{
       if(user is Map){
         String appUserToken = user[AppKey.appuser_token];
         return appUserToken;
-      } else {
+      } else if(user is String && user.isNotEmpty){
         var appuser = json.decode(user);
         String appUserToken = appuser[AppKey.appuser_token];
         return appUserToken;
+      } else{
+        return '';
       }
     }
 
     static Future getAssessorUUID() async{
 
       var user = await SharedPreferencesManager.getObject(AppKey.appuser);
-
       if(user is Map){
         String assessorUUID = user[AppKey.appuser_assessor_uuid];
         return assessorUUID;
-      } else {
-        var appuser = json.decode(user);
-        String assessorUUID = appuser[AppKey.appuser_assessor_uuid];
-        return assessorUUID;
+      } else if(user is String){
+        if(user != null && user.isNotEmpty){
+            var appuser = json.decode(user);
+            String assessorUUID = appuser[AppKey.appuser_assessor_uuid];
+            return assessorUUID;
+        }
+      }else {
+        return '';
       }
     }
 
@@ -55,7 +60,7 @@ class AppUtils{
     _scaffoldKey.currentState.showSnackBar(
       SnackBar(
         content: Text(value),
-        duration: Duration(seconds: 3),
+        duration: Duration(seconds: 2),
       )
     );
   }
@@ -78,6 +83,12 @@ class QuestionType {
   static const question_boolAnswer = "3";
   static const question_textAnswer = "4";
   static const question_intgerAnswer = "5";
+  static const question_imageViewAnswer = "6";
+  static const question_audioPlayAnswer = "7";
+  static const question_videoPlayAnswer = "8";
+  static const question_imageCaptureAnswer = "9";
+  static const question_audioRecordAnswer = "10";
+  static const question_videoRecordAnswer = "11";
 }
 
 class ThemeColor{
@@ -113,6 +124,11 @@ class ThemeImage{
     static const image_yes =  "assets/images/Yes.png";
     static const image_Bluetick =  "assets/images/Bluetick.png";
     static const image_back =  "assets/images/Backbutton.png";
+    static const image_noImageFound = "assets/images/NoImageFound.png";
+    static const image_pause = "assets/images/pause.png";
+    static const image_play = "assets/images/Play.png";
+    static const image_stop = "assets/images/Stop.png";
+    
 
     
 }
@@ -129,11 +145,12 @@ class AppMessage{
     static const String kError_EnterPassword = 'Please enter password';
     static const String kError_NoInternet = 'Netwrok not availabel!';
     static const String kError_SomethingWentWrong = 'Something went wronge!';
-    static const String kError_QuestionSelecteError = 'Please select your answer form given option!';
+    static const String kError_QuestionSelecteError = 'Please select your answer from given option!';
     static const String kError_QuestionInputError = 'Please input your answer!';
     static const String kError_NoAssessment = 'Candidate have no assessment!';
-    static const String kMsg_Logout = 'You will be return to loginScreen';
-    static const String kMsg_Reset = 'Reset password link sent to register email';
+    static const String kError_FileNotFound = 'File not found!';
+    static const String kMsg_Logout = 'Are you sure you want Logout and return to Login Screen?';
+    static const String kMsg_Reset = 'Please check your email';
 }
 
 class AppRoute{
@@ -145,22 +162,25 @@ class AppRoute{
 class AppConstant{
   AppConstant._();
 
-  static const String kHint_UserName = 'USER NAME';
+  static const String kHint_UserName = 'USERNAME';
     static const String kHint_Password = 'PASSWORD';
-    static const String kHint_SecurePassword = "••••••";
+    static const String kHint_SecurePassword = "PASSWORD";
     
-    static const String kTitle_Login = 'Log in';
+    static const String kTitle_Login = 'Log In';
     static const String kTitle_ForgotPass = 'Forgot Password?';
     static const String kTitle_Send = 'Send';
     static const String kTitle_StartAssessment = 'Start Assessment';
     static const String kTitle_EndAssessment = 'End Assessment';
     static const String kTitle_Check = 'Check';
     static const String kTitle_Next = 'Next';
+    static const String kTitle_Pass = 'Pass';
+    static const String kTitle_Fail = 'Fail';
     static const String kTitle_Assessment = 'Assessment';
     static const String kTitle_Assessment_Details = 'Assessment Details';
-    static const String kTitle_AddToDevice = 'Add to device';
+    static const String kTitle_AddToDevice = 'Add To Device';
     static const String kTitle_Download = 'Download';
     static const String kTitle_AssessmentHeader = 'Skills Assessor';
+
 
     
     static const String kHeader_ForogotPass = 'Forgot Password?';
@@ -179,6 +199,8 @@ class AppKey {
   static const String param_assessor_uuid = 'assessor_uuid';
   static const String param_appuser_token = 'appuser_token';
   static const String param_assessment_uuid = 'assessment_uuid';
+  static const String key_isContactAdd = 'isContactAdd';
+  static const String key_isCalenterEventAdd = 'isCalenterEventAdd';
   
 }
 

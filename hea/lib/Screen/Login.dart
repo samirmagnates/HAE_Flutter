@@ -10,9 +10,9 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
 
-  static final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  static final GlobalKey<FormState> _formForgotPassKey = GlobalKey<FormState>();
-  static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  static final GlobalKey<FormState> _formKeylogin = GlobalKey<FormState>();
+  static final GlobalKey<FormState> _formForgotPassKeylogin = GlobalKey<FormState>();
+  static final GlobalKey<ScaffoldState> _scaffoldKeylogin = new GlobalKey<ScaffoldState>();
   
   static final ValueKey _userNameKey = Key("username");
   static final ValueKey _passwordKey = Key("pass");
@@ -28,8 +28,10 @@ class _LoginState extends State<Login> {
   bool _autoValidateForgotpass = false;
 
   bool _isLoginLoading = false;
-  bool _isForgotPassLoading = false;
   bool _isError = false;
+
+  bool _isLoginTapped = false;
+  bool _isSendTapped = false;
 
   var message = AppMessage.kError_SomethingWentWrong;
 
@@ -42,8 +44,19 @@ class _LoginState extends State<Login> {
     }
 
   @override
+   void setState(fn) {
+    if(mounted){
+      super.setState(fn);
+    }
+  }
+
+  @override
     void dispose(){
         super.dispose();
+        txtUserName.dispose();
+        txtForgotPassUserName.dispose();
+        txtPass.dispose();
+
     }
 
   
@@ -51,7 +64,7 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
+      key: _scaffoldKeylogin,
       body: SafeArea(
           child: loginPage(context),
         )
@@ -60,23 +73,29 @@ class _LoginState extends State<Login> {
   }
 
   void _loginPress() async{
+    setState(() {
+          _isLoginLoading = true;
+           _isLoginTapped = true;
+      });
     FocusScope.of(context).requestFocus(new FocusNode());
-    final bool isValid = _formKey.currentState.validate();
+    final bool isValid = _formKeylogin.currentState.validate();
 
     setState(() {
       _autoValidate = !isValid;
     });
 
     if (!isValid) {
+      setState(() {
+          _isLoginLoading = false;
+          _isLoginTapped = false;
+        });
       return;
     }
 
     
 
     if(await AppUtils.isNetwrokAvailabe(context) == true){
-        setState(() {
-          _isLoginLoading = true;
-        });
+        
         String username = txtUserName.text ?? "";
         String password = txtPass.text ?? "";
 
@@ -109,44 +128,54 @@ class _LoginState extends State<Login> {
                     message = error[ApiResponsKey.message];
                   }
                   if(_isError == true){
-                    AppUtils.showInSnackBar(_scaffoldKey, message);
+                    AppUtils.showInSnackBar(_scaffoldKeylogin, message);
                   }
                 }
             }
         }
         setState(() {
             _isLoginLoading = false;
+            _isLoginTapped = false;
         });
         if(data != null){
           Navigator.of(context).pushNamed(AppRoute.routeHomeScreen);
         }
     } else {
+      setState(() {
+          _isLoginLoading = false;
+           _isLoginTapped = false;
+      });
         setState(() {
           _isError = true;
         });
         if(_isError == true){
-          AppUtils.showInSnackBar(_scaffoldKey, AppMessage.kError_NoInternet);
+          AppUtils.showInSnackBar(_scaffoldKeylogin, AppMessage.kError_NoInternet);
         }
     }
   }
 
   void _forgotPassPress() async {
+    setState(() {
+      _isLoginLoading = true;
+      _isSendTapped = true;
+    });
     FocusScope.of(context).requestFocus(new FocusNode());
-    final bool isValid = _formForgotPassKey.currentState.validate();
+    final bool isValid = _formForgotPassKeylogin.currentState.validate();
     setState(() {
       _autoValidateForgotpass = !isValid;
     });
 
     if (!isValid) {
+      setState(() {
+      _isLoginLoading = false;
+      _isSendTapped = false;
+    });
       return;
     }
-
-    setState(() {
-      _isForgotPassLoading = true;
-    });
-
+    Navigator.of(context).pop(context);
     var message = AppMessage.kError_SomethingWentWrong;
     if(await AppUtils.isNetwrokAvailabe(context) == true){
+        
         String username = txtForgotPassUserName.text ?? "";
         AppUtils.onPrintLog("username >> $username");
          Map body = {
@@ -155,8 +184,7 @@ class _LoginState extends State<Login> {
         var response =  await APIManager().httpRequest(APIType.public,APIMathods.resetPassword,context,body) as Map;
         var data;
         if(response != null){
-           
-            AppUtils.onPrintLog("response >> $response");
+           AppUtils.onPrintLog("response >> $response");
             if(response[ApiResponsKey.success] == true){
               if(response[ApiResponsKey.data] != null){
                 data = response[ApiResponsKey.data];
@@ -176,19 +204,20 @@ class _LoginState extends State<Login> {
         }
     }
 
+      
+      txtForgotPassUserName.text = '';
+      AppUtils.showInSnackBar(_scaffoldKeylogin, message);
       setState(() {
-            _isForgotPassLoading = false;
+          _isLoginLoading = false;
+          _isSendTapped = false;
       });
-      Navigator.of(context).pop();
-      AppUtils.showInSnackBar(_scaffoldKey, message);
-
   }
 
   Widget loginPage(BuildContext context) {
     return Stack(
         children: <Widget>[
           _showLoginBody(),
-          _isLoginLoading?_showCircularProgress() : Container(height: 0.0, width: 0.0,),
+          _isLoginLoading?_showCircularProgress() : SizedBox(height: 0.0, width: 0.0,),
          ],
       );
   }
@@ -197,7 +226,7 @@ class _LoginState extends State<Login> {
     return Stack(
         children: <Widget>[
           openForgotAPassPopupBox(),
-          _isForgotPassLoading?_showCircularProgress() : Container(height: 0.0, width: 0.0,)
+          //_isForgotPassLoading?_showCircularProgress() : SizedBox(height: 0.0, width: 0.0,)
         ],
       );
   }
@@ -215,7 +244,8 @@ class _LoginState extends State<Login> {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(32.0))),
             contentPadding: EdgeInsets.only(top: 0.0),
-            content: Container(
+            content: 
+            Container(
               width: 300.0,
               height: 250.0,
               child: Column(
@@ -246,56 +276,32 @@ class _LoginState extends State<Login> {
                     height: 5.0,
                   ),
                   Padding(
-                    padding: EdgeInsets.only(left: 30.0, right: 30.0),
+                    padding: EdgeInsets.only(left: 30.0, right: 30.0,top: 10),
                     child:Form(
-                      key: _formForgotPassKey,
-                      child: Container(
-                              width: MediaQuery.of(context).size.width,
-                              margin: const EdgeInsets.only(left: 0.0, right: 0.0, top: 20.0),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                      color: ThemeColor.theme_borderline_gray,
-                                      width: 1.0,
-                                      style: BorderStyle.solid),
-                                ),
-                              ),
-                              padding: const EdgeInsets.only(left: 0.0, right: 10.0),
-                              child: new Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: <Widget>[
-                                  new Expanded(
-                                    child : EnsureVisibleWhenFocused(
+                      key: _formForgotPassKeylogin,
+                      child: TextFormField(
                                       focusNode: _focusNodeEmail,
-                                      child: TextFormField(
                                       key: _forgotPasswordUserNameKey,
+                                      maxLines: 1,
                                       controller: txtForgotPassUserName,
                                       textAlign: TextAlign.left,
                                       textInputAction: TextInputAction.done,
-                                      autovalidate: _autoValidateForgotpass,
-                                      autocorrect: false,
-                                      validator: (value) => 
-                                          value.isEmpty || value.trim().isEmpty ? AppMessage.kError_EnterUserName:null,
-                                      onFieldSubmitted: (String value) => _forgotPassPress(),    
-                                      style: TextStyle(
-                                        color: ThemeColor.theme_dark,
-                                        fontFamily: ThemeFont.font_pourceSanPro,
-                                        fontSize: 18.0
+                                        autocorrect: false,
+                                        autovalidate: _autoValidateForgotpass,
+                                        validator: (value) => 
+                                                  value.isEmpty || value.trim().isEmpty ? AppMessage.kError_EnterUserName:null,
+                                        onFieldSubmitted: (String value) => FocusScope.of(context).requestFocus(new FocusNode()),        
+                                        style: TextStyle(
+                                          color: ThemeColor.theme_dark,
+                                          fontFamily: ThemeFont.font_pourceSanPro,
+                                          fontSize: 18.0
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText: AppConstant.kHint_UserName,
+                                          hintStyle: TextStyle(color: Colors.grey),
+                                        ),
+                                        
                                       ),
-                                      decoration: InputDecoration(
-                                        border: InputBorder.none,
-                                        hintText: AppConstant.kHint_UserName,
-                                        hintStyle: TextStyle(color: Colors.grey),
-                                      ),
-                                    )
-                                    )
-                                    ,
-                                  ),
-                                ],
-                              ),
-                            ),
                     )
                   ),
                   Container(
@@ -308,7 +314,7 @@ class _LoginState extends State<Login> {
                           color: ThemeColor.theme_blue,
                         ),
                         child: FlatButton(
-                          onPressed: () => _forgotPassPress(),
+                          onPressed: () => _isSendTapped?null:_forgotPassPress(),
                           child: Center(
                             child: Text(
                                 AppConstant.kTitle_Send,
@@ -340,7 +346,7 @@ class _LoginState extends State<Login> {
           shrinkWrap: true,
           children: <Widget>[
             Form(
-              key: _formKey,
+              key: _formKeylogin,
               child: SingleChildScrollView(
                 child: Container(
                   decoration: BoxDecoration(
@@ -488,7 +494,7 @@ class _LoginState extends State<Login> {
                           color: ThemeColor.theme_blue,
                         ),
                         child: FlatButton(
-                          onPressed: () => _loginPress(),
+                          onPressed: () => _isLoginTapped?null:_loginPress(),
                           child: Center(
                             child: Text(
                                 AppConstant.kTitle_Login,
@@ -518,7 +524,7 @@ class _LoginState extends State<Login> {
   }
 
   Widget _showCircularProgress(){
-    if (_isLoginLoading || _isForgotPassLoading) {
+    if (_isLoginLoading) {
       return Center(child: CircularProgressIndicator());
     } 
   }

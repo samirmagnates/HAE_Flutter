@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:hea/Utils/AppUtils.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
@@ -23,21 +25,23 @@ class APIManager {
       requestHeaders[AppKey.header_Authorization] = userToken;
     }
     url = url+method+'/';
-    var response = await http.post(url,body: body,headers: requestHeaders);
-    AppUtils.onPrintLog("response >>> ${response.body}");
-    var data = json.encode(response.body);
-    
-
     var jsonData;
+    try{
+        var response = await http.post(url,body: body,headers: requestHeaders);
+        AppUtils.onPrintLog("response >>> ${response.body}");
+        var data = json.encode(response.body);
+        try {
+          jsonData = json.decode(response.body);
+        } on FormatException catch (e) {
+          print("That string didn't look like Json. >>> $e");
+        } on NoSuchMethodError catch (e) {
+          print('That string was null! >>> $e');
+        }
+    } on TimeoutException catch (e){
 
-    try {
-      jsonData = json.decode(response.body);
-    } on FormatException catch (e) {
-      print("That string didn't look like Json. >>> $e");
-    } on NoSuchMethodError catch (e) {
-      print('That string was null! >>> $e');
+    } on SocketException catch(e){
+
     }
-
     return jsonData;
   }
 

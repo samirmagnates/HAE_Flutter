@@ -7,18 +7,23 @@ import 'package:hea/Utils/apimanager.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:hea/Screen/StartAssessment.dart';
-
+import 'package:permission_handler/permission_handler.dart';
+import 'package:hea/Utils/SharedPreferences.dart';
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
-  static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  static final GlobalKey<ScaffoldState> _scaffoldKeyHome = new GlobalKey<ScaffoldState>();
   
   Candidate assessmentSelected;
   bool _isLoading = true;
   bool _isError = false;
+  bool _isAddToDeviceTapped = false;
+  bool _isDownloadTapped = false;
+  bool _isStartAssessmentTapped = false;
+
 
   String noDataMessage = '';
 
@@ -41,7 +46,7 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
+      key: _scaffoldKeyHome,
       appBar: AppBar(
         centerTitle: true,
         title: Text(
@@ -73,25 +78,28 @@ class _HomeState extends State<Home> {
         bottom: true,
         child: widgetHomeScreen(),
       ),
-      bottomNavigationBar:this.assessmentSelected != null?Container(
+      bottomNavigationBar:this.assessmentSelected != null?SafeArea(
+        bottom: true,
+        child: Container(
         height: 60,
         decoration: BoxDecoration(
           color: ThemeColor.theme_blue
         ),
         child: FlatButton(
-                          onPressed: () => _startAssessment(),
-                          child: Center(
-                            child: Text(
-                                AppConstant.kTitle_StartAssessment,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontFamily: ThemeFont.font_pourceSanPro,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 25.0),
-                              ),
-                          ),
-                        ),
+          onPressed: () => _isStartAssessmentTapped?null:_startAssessment(),
+          child: Center(
+            child: Text(
+                AppConstant.kTitle_StartAssessment,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontFamily: ThemeFont.font_pourceSanPro,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 25.0),
+              ),
+          ),
+        ),
+      ),
       ):SizedBox(
         width: 0.0,
         height: 0.0,
@@ -118,7 +126,7 @@ class _HomeState extends State<Home> {
     return Stack(
         children: <Widget>[
           this.assessmentSelected != null ?widgetHomePage() : widgetNoDataFount(),
-          _isLoading?AppUtils.onShowLoder() : Container(height: 0.0, width: 0.0,),
+          _isLoading?AppUtils.onShowLoder() : SizedBox(height: 0.0, width: 0.0,),
          ],
       );
   }
@@ -230,6 +238,18 @@ class _HomeState extends State<Home> {
                                 fontFamily: ThemeFont.font_pourceSanPro,
                                 color: ThemeColor.theme_blue,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 20.0),
+                          ),
+                          SizedBox(
+                           height: 20,
+                          ),
+                          Text(
+                            'Title :${this.assessmentSelected.ASSESSMENT_TITLE}',
+                            textAlign: TextAlign.left,
+                            style: TextStyle(
+                                fontFamily: ThemeFont.font_pourceSanPro,
+                                color: ThemeColor.theme_dark,
+                                fontWeight: FontWeight.w400,
                                 fontSize: 20.0),
                           ),
                           SizedBox(
@@ -368,7 +388,7 @@ class _HomeState extends State<Home> {
                       padding: EdgeInsets.symmetric(vertical: 20),
                       child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: <Widget>[
                               Expanded(child:
                                 Container(
@@ -380,7 +400,7 @@ class _HomeState extends State<Home> {
                                     color: ThemeColor.theme_blue,
                                   ),
                                   child: FlatButton(
-                                    onPressed: () => ({
+                                    onPressed: () => _isAddToDeviceTapped?null:({
                                        _addToDevice()
                                     }),
                                     child: Center(
@@ -398,7 +418,7 @@ class _HomeState extends State<Home> {
                                 ),
                               ),
                               SizedBox(
-                                width: 20,
+                                width: 15,
                               ),
                               Expanded(child:
                                 Container(
@@ -484,7 +504,7 @@ class _HomeState extends State<Home> {
                     errorMessage = error[ApiResponsKey.message];
                   }
                   if(_isError == true){
-                    AppUtils.showInSnackBar(_scaffoldKey, errorMessage);
+                    AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
                   }
               }
               setState(() {
@@ -504,11 +524,11 @@ class _HomeState extends State<Home> {
           });
           _isError = true;
           if(_isError == true){
-            AppUtils.showInSnackBar(_scaffoldKey,AppMessage.kError_NoInternet);
+            AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
           }
       }
     } else {
-        AppUtils.showInSnackBar(_scaffoldKey, errorMessage);
+        AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
         setState(() {
           this.assessmentSelected = null;
         });
@@ -543,7 +563,7 @@ class _HomeState extends State<Home> {
                     errorMessage = error[ApiResponsKey.message];
                   }
                   if(_isError == true){
-                    AppUtils.showInSnackBar(_scaffoldKey, errorMessage);
+                    AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
                   }
                 }
             }
@@ -558,11 +578,11 @@ class _HomeState extends State<Home> {
       } else {
           _isError = true;
           if(_isError == true){
-            AppUtils.showInSnackBar(_scaffoldKey,AppMessage.kError_NoInternet);
+            AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
           }
       }
     } else {
-        AppUtils.showInSnackBar(_scaffoldKey, errorMessage);
+        AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
     }
   }
 
@@ -608,52 +628,192 @@ class _HomeState extends State<Home> {
     Future _addToDevice() async {
         setState(() {
           _isLoading = true;
+          _isAddToDeviceTapped = true;
         });
-        if(this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER != null && this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER != ''){
-          await _addToContact();
+
+        var isContactAdd = SharedPreferencesManager.getValue('${AppKey.key_isContactAdd}-${this.assessmentSelected.ID}');
+        String strAddContact = 'false';
+        if(isContactAdd != null && isContactAdd is String){
+            strAddContact = isContactAdd.toString();
+        }
+        if(strAddContact == 'false'){
+            if(this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER != null && this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER != ''){
+              await _addToContact();
+            }
+        }
+        
+        var isCalenderEventAdded = SharedPreferencesManager.getValue('${AppKey.key_isCalenterEventAdd}-${this.assessmentSelected.ID}');
+        
+        String strAddCalender = 'false';
+        if(isCalenderEventAdded != null && isCalenderEventAdded is String){
+            strAddCalender = isContactAdd.toString();
         }
 
-        if(this.assessmentSelected.ASSESSMENT_APPOINTMENT != null && this.assessmentSelected.ASSESSMENT_APPOINTMENT != ''){
-          await _addToCalender();
+        if(strAddCalender == 'false'){
+            if(this.assessmentSelected.ASSESSMENT_APPOINTMENT != null && this.assessmentSelected.ASSESSMENT_APPOINTMENT != ''){
+              await _addToCalender();
+            }
+        }
+        if(strAddContact == 'true' && strAddCalender == 'true' ){
+            AppUtils.showInSnackBar(_scaffoldKeyHome,'Already added to device');
         }
         
         setState(() {
           _isLoading = false;
+          _isAddToDeviceTapped = false;
         });
     }
 
     Future _addToContact() async {
+      
         Contact newContct = Contact();
         newContct.displayName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST + ' ' + this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
         newContct.givenName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST;
         newContct.familyName = this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
         newContct.emails = [Item(label: 'email',value: this.assessmentSelected.ASSESSMENT_CANDIDATE_EMAIL)];
         newContct.phones = [Item(label: 'phone',value: this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER)];
-        await ContactsService.addContact(newContct);
+
+        try{
+          await ContactsService.addContact(newContct);
+          var isContactAdd = 'true';
+          SharedPreferencesManager.setValue(isContactAdd,'${AppKey.key_isContactAdd}-${this.assessmentSelected.ID}');
+        } on PlatformException catch(e){
+          openPermisionPopupBox('Contact ${e.message}','Enable contact service for application form setting');
+          //AppUtils.showInSnackBar(_scaffoldKey,'Contact ${e.message}');
+        }
+        
     }
 
     Future _addToCalender() async {
+      
+      Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.calendar]);
+      PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.calendar];
 
-      String candidateFullName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST + ' ' + this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
-      DateTime startDate  = DateTime.parse(this.assessmentSelected.ASSESSMENT_APPOINTMENT);
-      DateTime endDate  = startDate.add(Duration(days: 1));
-      final Event event = Event(
-        title: '$candidateFullName  assessment  of ${this.assessmentSelected.ASSESSMENT_TITLE}',
-        description: this.assessmentSelected.ASSESSMENT_TITLE,
-        startDate: startDate,
-        endDate: endDate
-      );
-      Add2Calendar.addEvent2Cal(event);
+
+      if(_permissionStatus == PermissionStatus.granted){
+        String candidateFullName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST + ' ' + this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
+          DateTime startDate  = DateTime.parse(this.assessmentSelected.ASSESSMENT_APPOINTMENT);
+          DateTime endDate  = startDate.add(Duration(days: 1));
+        final Event event = Event(
+          title: '$candidateFullName  assessment  of ${this.assessmentSelected.ASSESSMENT_TITLE}',
+          description: this.assessmentSelected.ASSESSMENT_TITLE,
+          startDate: startDate,
+          endDate: endDate
+        );
+        try{
+
+            await Add2Calendar.addEvent2Cal(event);
+            var isCalenderEventAdded = 'true';
+            SharedPreferencesManager.setValue(isCalenderEventAdded,'${AppKey.key_isCalenterEventAdd}-${this.assessmentSelected.ID}');
+          } on PlatformException catch(e){
+            openPermisionPopupBox('Calender ${e.message}','Enable calender service for application form setting');
+            //AppUtils.showInSnackBar(_scaffoldKey,e.toString());
+          }
+      } else {
+        openPermisionPopupBox('Calender Access Denie','Enable calender service for application form setting');
+      }
+      
+      
 
     }
 
+    Widget openPermisionPopupBox(String title, String message) {
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(32.0))),
+            contentPadding: EdgeInsets.only(top: 0.0),
+            content: Container(
+              width: 300.0,
+              height: 220.0,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                      padding: EdgeInsets.only(top: 20.0, bottom: 20.0),
+                      decoration: BoxDecoration(
+                        color: ThemeColor.theme_blue,
+                        borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(32.0),
+                            topRight: Radius.circular(32.0)),
+                      ),
+                      child: Text(
+                                title,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: ThemeFont.font_pourceSanPro,
+                                  fontSize: 20.0,
+                                  fontWeight: FontWeight.bold
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                    ),
+                  SizedBox(
+                    height: 5.0,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(left: 30.0, right: 30.0,top: 10.0),
+                    child:Center(
+                      child:Text(
+                                message,
+                                style: TextStyle(
+                                  color: ThemeColor.theme_dark,
+                                  fontFamily: ThemeFont.font_pourceSanPro,
+                                  fontSize: 18.0,
+                                  fontWeight: FontWeight.bold
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                    ),
+                  ),
+                  Container(
+                        height: 50,
+                        width: MediaQuery.of(context).size.width,
+                        margin: const EdgeInsets.only(left: 40.0, right: 40.0, top: 20.0),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                          color: ThemeColor.theme_blue,
+                        ),
+                        child: FlatButton(
+                          onPressed: ()  {
+                            Navigator.of(context).pop();
+                          },
+                          child: Center(
+                            child: Text(
+                                'Ok',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontFamily: ThemeFont.font_pourceSanPro,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20.0),
+                              ),
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+            ),
+          );
+        });
+  }
+
     void _startAssessment() async {
+
+      setState((){
+              _isLoading = true;
+              _isStartAssessmentTapped = true;
+       });
 
       if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
         if(await AppUtils.isNetwrokAvailabe(context) == true){
-          setState((){
-              _isLoading = true;
-          });
+          
           AppUtils.onShowLoder();
           Map body = {
             AppKey.param_assessment_uuid:this.assessmentSelected.ASSESSMENT_UUID
@@ -677,27 +837,31 @@ class _HomeState extends State<Home> {
                       errorMessage = error[ApiResponsKey.message];
                     }
                     if(_isError == true){
-                      AppUtils.showInSnackBar(_scaffoldKey, errorMessage);
+                      AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
                     }
                   }
               }
           }
           setState((){
             _isLoading = false;
+            _isStartAssessmentTapped = false;
           });
-          _isLoading = false;
           if(data != null){
             Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(responsData: data)));
           }
         } else {
             _isError = true;
             if(_isError == true){
-              AppUtils.showInSnackBar(_scaffoldKey,AppMessage.kError_NoInternet);
+              AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
             }
         }
 
       } else {
-         AppUtils.showInSnackBar(_scaffoldKey, AppMessage.kError_NoAssessment);
+        setState((){
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+          });
+         AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
       }
 
         
@@ -717,7 +881,7 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
 
   TextEditingController txtSearch = TextEditingController();
   List<Candidate> arrSearch = List<Candidate> ();
-
+  BuildContext globalContext;
   @override
   void initState() {
     // TODO: implement initState
@@ -726,6 +890,12 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
       setState((){
         arrSearch.addAll(widget.arrCadidates);
       });
+    }
+  }
+  @override
+   void setState(fn) {
+    if(mounted){
+      super.setState(fn);
     }
   }
 
@@ -738,6 +908,7 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
 
   @override
   Widget build(BuildContext context) {
+    globalContext =  context;
     return SimpleDialog(
             title: Column(
               children: <Widget>[
