@@ -36,6 +36,10 @@ dependencies:
   chewie: ^0.9.7
   video_player: ^0.10.0+2
   auto_orientation: ^0.0.2
+  flutter_youtube_view: ^1.1.4
+  sqflite: ^1.1.5
+  path_provider: 0.5.0+1
+
 
 
 dev_dependencies:

@@ -6,7 +6,7 @@ import 'dart:convert';
 class AppUtils{
     
     static Future getAppUserToken() async{
-      var user = await SharedPreferencesManager.getObject(AppKey.appuser);
+    var user = await SharedPreferencesManager.getObject(AppKey.appuser);
 
       if(user is Map){
         String appUserToken = user[AppKey.appuser_token];
@@ -151,6 +151,8 @@ class AppMessage{
     static const String kError_FileNotFound = 'File not found!';
     static const String kMsg_Logout = 'Are you sure you want Logout and return to Login Screen?';
     static const String kMsg_Reset = 'Please check your email';
+    static const String kError_Download = 'Need to Download assessment first!';
+    static const String kError_DownloadAlready = 'Assessment already downloaded!';
 }
 
 class AppRoute{
@@ -211,6 +213,73 @@ class ApiResponsKey {
   static const String error = 'error';
   static const String code = 'code';
   static const String message = 'message';
+}
+
+class AppDatabase{
+  AppDatabase._();
+
+  static final String db_name = 'HAE.db';
+  static final int db_version = 1;
+
+  static final String tbl_name_assessments = 'assessments';
+  static final String tbl_name_assessment_meta = 'assessment_meta';
+  static final String tbl_name_tasks = 'tasks';
+  
+  static final String tbl_assessments_field_assessment_uuid = 'assessment_uuid';
+  static final String tbl_assessments_field_assessment_appointment = 'assessment_appointment';
+  static final String tbl_assessments_field_assessment_assessor_first = "assessment_assessor_first";
+  static final String tbl_assessments_field_assessment_assessor_last = 'assessment_assessor_last';
+  static final String tbl_assessments_field_assessment_candidate_first = 'assessment_candidate_first';
+  static final String tbl_assessments_field_assessment_candidate_last = 'assessment_candidate_last';
+  static final String tbl_assessments_field_assessment_candidate_email = 'assessment_candidate_email';
+  static final String tbl_assessments_field_assessment_candidate_number = 'assessment_candidate_number';
+  static final String tbl_assessments_field_assessment_address_company = 'assessment_address_company';
+  static final String tbl_assessments_field_assessment_address_address1 = 'assessment_address_address1';
+  static final String tbl_assessments_field_assessment_address_address2 = 'assessment_address_address2';
+  static final String tbl_assessments_field_assessment_address_towncity = 'assessment_address_towncity';
+  static final String tbl_assessments_field_assessment_address_county = 'assessment_address_county';
+  static final String tbl_assessments_field_assessment_address_postcode = 'assessment_address_postcode';
+  static final String tbl_assessments_field_assessment_address_country = 'assessment_address_country';
+  static final String tbl_assessments_field_assessment_title = 'assessment_title';
+  static final String tbl_assessments_field_assessor_uuid = 'assessor_uuid';
+  static final String tbl_assessments_field_id = 'assessment_id';
+  static final String tbl_assessments_field_assessment_is_add_contact = 'is_add_contact';
+  static final String tbl_assessments_field_assessment_contact_id = 'contact_id';
+  static final String tbl_assessments_field_assessment_is_add_calender = 'is_add_calender';
+  static final String tbl_assessments_field_assessment_calender_id = 'calender_id';
+  static final String tbl_assessments_field_assessment_is_downloaded = 'is_downloaded';
+  static final String tbl_assessments_field_assessment_is_end = 'is_end';
+
+  static final String tbl_tasks_field_assessment_task_uuid = 'assessment_task_uuid';
+  static final String tbl_tasks_field_assessment_task_type = 'assessment_task_type';
+  static final String tbl_tasks_field_assessment_task_correct_response_id = 'assessment_task_correct_response_id';
+  static final String tbl_tasks_field_assessment_task_answer_response_id = 'assessment_task_answer_response_id';
+  static final String tbl_tasks_field_score = 'score';
+  static final String tbl_tasks_field_prompt = 'prompt';
+  static final String tbl_tasks_field_result = 'result';
+  static final String tbl_tasks_field_responses = 'responses';
+  static final String tbl_tasks_field_assessment_task_correct_response_text = 'assessment_task_correct_response_text';
+  static final String tbl_tasks_field_assessment_task_answer_response_text = 'assessment_task_answer_response_text';
+  static final String tbl_tasks_field_assessment_task_asset_url = 'assessment_task_asset_url';
+  static final String tbl_tasks_field_assessment_task_upload_format = 'assessment_task_upload_format';
+  static final String tbl_tasks_field_assessment_task_local_file = 'assessment_task_local_file';
+  static final String tbl_tasks_field_assessment_uuid = 'assessment_uuid';
+  static final String tbl_tasks_field_assessor_uuid = 'assessor_uuid';
+
+  static final String tbl_assessment_meta_field_assessor_uuid = 'assessor_uuid';
+  static final String tbl_assessment_meta_field_assessor_name = 'assessor_name';
+  static final String tbl_assessment_meta_field_candidate_uuid = 'candidate_uuid';
+  static final String tbl_assessment_meta_field_candidate_name = 'candidate_name';
+  static final String tbl_assessment_meta_field_assessment_uuid = 'assessment_uuid';
+  static final String tbl_assessment_meta_field_assessment_name = 'assessment_name';
+  static final String tbl_assessment_meta_field_assessment_introduction = 'assessment_introduction';
+  static final String tbl_assessment_meta_field_assessment_passmark = 'assessment_passmark';
+  static final String tbl_assessment_meta_field_assessment_obtainmark = 'assessment_obtainmark';
+  static final String tbl_assessment_meta_field_assessment_result = 'assessment_result';
+
+        
+
+
 }
 
 

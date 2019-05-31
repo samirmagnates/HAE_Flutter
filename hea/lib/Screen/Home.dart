@@ -4,11 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:hea/Utils/AppUtils.dart';
 import 'package:hea/Model/Candidate.dart';
 import 'package:hea/Utils/apimanager.dart';
+import 'package:hea/Utils/DbManager.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:hea/Screen/StartAssessment.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:hea/Utils/SharedPreferences.dart';
+import 'package:hea/Model/AssessmentTasks.dart';
+import 'package:hea/Model/AssessmentMetaData.dart';
+import 'package:hea/Model/QuestionOptions.dart';
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
@@ -83,7 +86,7 @@ class _HomeState extends State<Home> {
         child: Container(
         height: 60,
         decoration: BoxDecoration(
-          color: ThemeColor.theme_blue
+          color: this.assessmentSelected.IS_DOWNLOADED == 1?ThemeColor.theme_blue:Colors.grey
         ),
         child: FlatButton(
           onPressed: () => _isStartAssessmentTapped?null:_startAssessment(),
@@ -387,11 +390,13 @@ class _HomeState extends State<Home> {
                     Container(
                       padding: EdgeInsets.symmetric(vertical: 20),
                       child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: <Widget>[
-                              Expanded(child:
-                                Container(
+                              this.assessmentSelected.IS_ADD_CALENDER == 0 || this.assessmentSelected.IS_ADD_CONTACT == 0 ? Expanded(child:
+                                Padding(
+                                  padding: EdgeInsets.only(right: 5),
+                                  child: Container(
                                   height: 50,
                                   decoration: ShapeDecoration(
                                     shape: RoundedRectangleBorder(
@@ -416,12 +421,13 @@ class _HomeState extends State<Home> {
                                     ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(
-                                width: 15,
-                              ),
-                              Expanded(child:
-                                Container(
+                                )
+                                
+                              ):SizedBox(),
+                              this.assessmentSelected.IS_DOWNLOADED == 0?Expanded(
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 5),
+                                  child: Container(
                                   height: 50,
                                   decoration: ShapeDecoration(
                                     shape: RoundedRectangleBorder(
@@ -430,7 +436,9 @@ class _HomeState extends State<Home> {
                                     color: ThemeColor.theme_blue,
                                   ),
                                   child: FlatButton(
-                                    onPressed: () => ({}),
+                                    onPressed: () => _isDownloadTapped?null:({
+                                       _downloadAssessment()
+                                    }),
                                     child: Center(
                                       child: Text(
                                           AppConstant.kTitle_Download,
@@ -444,9 +452,8 @@ class _HomeState extends State<Home> {
                                     ),
                                   ),
                                 ),
-                              ),
-                              
-                              
+                                )
+                              ):SizedBox(),
                             ],
                           ),
                           
@@ -486,15 +493,22 @@ class _HomeState extends State<Home> {
                 //matchData = list.map((model) => Match.fromJson(model)).toList();
                 this.arrCadidates = list.map((model) => Candidate.fromJSON(model)).toList();
                 if(this.arrCadidates.length > 0){
+                    Candidate candidate = this.arrCadidates.first;
+                    //await DBManager.db.performAssessmetnsAction(candidate);
+
+                    var res = await DBManager.db.checkAssessementsExists(candidate);
+                    if (res.isEmpty){
+                      await DBManager.db.insertAssessmetns(candidate);
+                    } 
+                    var response =  await DBManager.db.getAssessements(candidate.ASSESSMENT_UUID,candidate.ASSESSOR_UUID);
                     setState(() {
-                      this.assessmentSelected = this.arrCadidates[0];
+                      this.assessmentSelected = response != null?response as Candidate:null;
                     });
                 } else {
                    setState(() {
                       noDataMessage = 'No data found';
                     });
                 }
-                
               }
             }else {
               if(response[ApiResponsKey.error] != null){
@@ -619,8 +633,15 @@ class _HomeState extends State<Home> {
       );
 
       if(result != null){
+          Candidate candidate = result as Candidate;
+          //await DBManager.db.performAssessmetnsAction(candidate);
+          var res = await DBManager.db.checkAssessementsExists(candidate);
+          if (res.isEmpty){
+            await DBManager.db.insertAssessmetns(candidate);
+          } 
+          var response =  await DBManager.db.getAssessements(candidate.ASSESSMENT_UUID,candidate.ASSESSOR_UUID);
           setState(() {
-            this.assessmentSelected = result as Candidate;
+            this.assessmentSelected = response != null?response as Candidate:null;
           });
       }
     }
@@ -630,31 +651,27 @@ class _HomeState extends State<Home> {
           _isLoading = true;
           _isAddToDeviceTapped = true;
         });
-
-        var isContactAdd = SharedPreferencesManager.getValue('${AppKey.key_isContactAdd}-${this.assessmentSelected.ID}');
-        String strAddContact = 'false';
-        if(isContactAdd != null && isContactAdd is String){
-            strAddContact = isContactAdd.toString();
-        }
-        if(strAddContact == 'false'){
+        
+        //var isContactAdd = SharedPreferencesManager.getValue('${AppKey.key_isContactAdd}-${this.assessmentSelected.ASSESSMENT_ID}');
+        int isContactAdd = this.assessmentSelected.IS_ADD_CONTACT;
+        if(isContactAdd == null || isContactAdd ==  0){
             if(this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER != null && this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER != ''){
               await _addToContact();
             }
         }
         
-        var isCalenderEventAdded = SharedPreferencesManager.getValue('${AppKey.key_isCalenterEventAdd}-${this.assessmentSelected.ID}');
         
+        //var isCalenderEventAdded = SharedPreferencesManager.getValue('${AppKey.key_isCalenterEventAdd}-${this.assessmentSelected.ASSESSMENT_ID}');
+        int isCalenderEventAdded = this.assessmentSelected.IS_ADD_CALENDER;
         String strAddCalender = 'false';
-        if(isCalenderEventAdded != null && isCalenderEventAdded is String){
-            strAddCalender = isContactAdd.toString();
-        }
-
-        if(strAddCalender == 'false'){
-            if(this.assessmentSelected.ASSESSMENT_APPOINTMENT != null && this.assessmentSelected.ASSESSMENT_APPOINTMENT != ''){
+        if(isCalenderEventAdded == null || isCalenderEventAdded == 0){
+           if(this.assessmentSelected.ASSESSMENT_APPOINTMENT != null && this.assessmentSelected.ASSESSMENT_APPOINTMENT != ''){
               await _addToCalender();
             }
         }
-        if(strAddContact == 'true' && strAddCalender == 'true' ){
+
+        
+        if(isContactAdd == 1 && strAddCalender == 1 ){
             AppUtils.showInSnackBar(_scaffoldKeyHome,'Already added to device');
         }
         
@@ -675,8 +692,17 @@ class _HomeState extends State<Home> {
 
         try{
           await ContactsService.addContact(newContct);
-          var isContactAdd = 'true';
-          SharedPreferencesManager.setValue(isContactAdd,'${AppKey.key_isContactAdd}-${this.assessmentSelected.ID}');
+          this.assessmentSelected.IS_ADD_CONTACT = 1;
+          var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
+          if (res.isNotEmpty){
+            await DBManager.db.updateAssessmetns(this.assessmentSelected);
+          } 
+          /*var response =  await DBManager.db.getAssessements(candidate.ASSESSMENT_UUID,candidate.ASSESSOR_UUID);
+          setState(() {
+            this.assessmentSelected = response != null?response as Candidate:null;
+          });*/
+
+
         } on PlatformException catch(e){
           openPermisionPopupBox('Contact ${e.message}','Enable contact service for application form setting');
           //AppUtils.showInSnackBar(_scaffoldKey,'Contact ${e.message}');
@@ -703,8 +729,11 @@ class _HomeState extends State<Home> {
         try{
 
             await Add2Calendar.addEvent2Cal(event);
-            var isCalenderEventAdded = 'true';
-            SharedPreferencesManager.setValue(isCalenderEventAdded,'${AppKey.key_isCalenterEventAdd}-${this.assessmentSelected.ID}');
+            this.assessmentSelected.IS_ADD_CALENDER = 1;
+            var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
+            if (res.isNotEmpty){
+              await DBManager.db.updateAssessmetns(this.assessmentSelected);
+            } 
           } on PlatformException catch(e){
             openPermisionPopupBox('Calender ${e.message}','Enable calender service for application form setting');
             //AppUtils.showInSnackBar(_scaffoldKey,e.toString());
@@ -804,67 +833,169 @@ class _HomeState extends State<Home> {
         });
   }
 
-    void _startAssessment() async {
-
-      setState((){
+  void _downloadAssessment() async {
+      if(this.assessmentSelected.IS_DOWNLOADED == 0){
+          setState((){
               _isLoading = true;
-              _isStartAssessmentTapped = true;
-       });
+              _isDownloadTapped = true;
+          });
 
-      if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
-        if(await AppUtils.isNetwrokAvailabe(context) == true){
-          
-          AppUtils.onShowLoder();
-          Map body = {
-            AppKey.param_assessment_uuid:this.assessmentSelected.ASSESSMENT_UUID
-          };
+          if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
+            if(await AppUtils.isNetwrokAvailabe(context) == true){
+              
+              AppUtils.onShowLoder();
+              Map body = {
+                AppKey.param_assessment_uuid:this.assessmentSelected.ASSESSMENT_UUID
+              };
 
-          var response =  await APIManager().httpRequest(APIType.private,APIMathods.downloadAssessment,context,body) as Map;
-          var data;
-          if(response != null){
-              AppUtils.onPrintLog("response >> $response");
-    
-              if(response[ApiResponsKey.success] == true){
-                if(response[ApiResponsKey.data] != null){
-                  data = response[ApiResponsKey.data];
-                }
-                  
-              }else {
-                if(response[ApiResponsKey.error] != null){
-                    _isError = true;
-                    Map error = response[ApiResponsKey.error];
-                    if(error[ApiResponsKey.message] != null){
-                      errorMessage = error[ApiResponsKey.message];
+              var response =  await APIManager().httpRequest(APIType.private,APIMathods.downloadAssessment,context,body) as Map;
+              var data;
+              if(response != null){
+                  AppUtils.onPrintLog("response >> $response");
+        
+                  if(response[ApiResponsKey.success] == true){
+                    if(response[ApiResponsKey.data] != null){
+                      data = response[ApiResponsKey.data];
                     }
-                    if(_isError == true){
-                      AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
-                    }
+                      
+                  }else {
+                    if(response[ApiResponsKey.error] != null){
+                        _isError = true;
+                        Map error = response[ApiResponsKey.error];
+                        if(error[ApiResponsKey.message] != null){
+                          errorMessage = error[ApiResponsKey.message];
+                        }
+                        if(_isError == true){
+                          AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
+                        }
+                      }
                   }
               }
-          }
-          setState((){
-            _isLoading = false;
-            _isStartAssessmentTapped = false;
-          });
-          if(data != null){
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(responsData: data)));
-          }
-        } else {
-            _isError = true;
-            if(_isError == true){
-              AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
-            }
-        }
+              
+              if(data != null){
+                  if(data['assessment_meta'] != null){
+                    Map meta = data['assessment_meta'];
+                    AssessmentMetaData  metadate = AssessmentMetaData.fromJSON(meta);
 
+                    var res = await DBManager.db.checkAssessementsMetaDataExists(metadate);
+                    if (res.isEmpty){
+                      await DBManager.db.insertAssessmetnsMetaData(metadate);
+                    } 
+
+                  }
+
+                  if(data['assessment_tasks'] != null){
+                    Iterable list = data['assessment_tasks'];
+                    List<AssessmentTasks> arrAssessmentTask = list.map((model) => AssessmentTasks.fromJSON(model)).toList();
+                    if(arrAssessmentTask.length > 0){
+
+                        arrAssessmentTask.forEach((task) async {
+                          var res = await DBManager.db.checkAssessementsTaskExists(task,this.assessmentSelected.ASSESSMENT_UUID,this.assessmentSelected.ASSESSOR_UUID);
+                            if (res.isEmpty){
+                              await DBManager.db.insertAssessmetnsTask(task);
+                            } else {
+
+                            }
+                        });
+                       
+                        this.assessmentSelected.IS_ADD_CONTACT = 1;
+                        var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
+                        if (res.isNotEmpty){
+                          await DBManager.db.updateAssessmetns(this.assessmentSelected);
+                        } 
+                    } 
+                  }
+              }
+
+
+
+              setState((){
+                _isLoading = false;
+                _isDownloadTapped = false;
+              });
+            } else {
+                _isError = true;
+                if(_isError == true){
+                  AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
+                }
+            }
+
+          } else {
+            setState((){
+                  _isLoading = false;
+                  _isStartAssessmentTapped = false;
+              });
+            AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+          }
       } else {
-        setState((){
-              _isLoading = false;
-              _isStartAssessmentTapped = false;
+          AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_DownloadAlready);
+      }
+  }
+
+    void _startAssessment() async {
+
+      if (this.assessmentSelected.IS_DOWNLOADED == 1){
+          setState((){
+              _isLoading = true;
+              _isStartAssessmentTapped = true;
           });
-         AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+
+          if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
+            if(await AppUtils.isNetwrokAvailabe(context) == true){
+              
+              AppUtils.onShowLoder();
+              Map body = {
+                AppKey.param_assessment_uuid:this.assessmentSelected.ASSESSMENT_UUID
+              };
+
+              var response =  await APIManager().httpRequest(APIType.private,APIMathods.downloadAssessment,context,body) as Map;
+              var data;
+              if(response != null){
+                  AppUtils.onPrintLog("response >> $response");
+        
+                  if(response[ApiResponsKey.success] == true){
+                    if(response[ApiResponsKey.data] != null){
+                      data = response[ApiResponsKey.data];
+                    }
+                      
+                  }else {
+                    if(response[ApiResponsKey.error] != null){
+                        _isError = true;
+                        Map error = response[ApiResponsKey.error];
+                        if(error[ApiResponsKey.message] != null){
+                          errorMessage = error[ApiResponsKey.message];
+                        }
+                        if(_isError == true){
+                          AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
+                        }
+                      }
+                  }
+              }
+              setState((){
+                _isLoading = false;
+                _isStartAssessmentTapped = false;
+              });
+              if(data != null){
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(responsData: data)));
+              }
+            } else {
+                _isError = true;
+                if(_isError == true){
+                  AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
+                }
+            }
+
+          } else {
+            setState((){
+                  _isLoading = false;
+                  _isStartAssessmentTapped = false;
+              });
+            AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+          }
+      } else {
+           AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_Download);
       }
 
-        
     }
 
 

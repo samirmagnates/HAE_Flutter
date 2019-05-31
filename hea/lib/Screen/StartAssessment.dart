@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hea/Model/AssessmentTasks.dart';
 import 'package:hea/Model/AssessmentMetaData.dart';
-import 'package:hea/Utils/AppUtils.dart';
 import 'package:hea/Model/QuestionOptions.dart';
+import 'package:hea/Utils/AppUtils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:hea/Screen/AudioPlayer.dart';
 import 'package:hea/Screen/VideoPlayer.dart';
+import '../Screen/YoutubeVideoPlayer.dart';
+import 'dart:convert';
 
 class StartAssessment extends StatefulWidget {
   @override
@@ -26,6 +28,7 @@ class _StartAssessmentState extends State<StartAssessment> {
     List<AssessmentTasks> arrAssessmentTask;
     AssessmentMetaData assessmentMetaData;
     List<String> arrSelectedOption = List<String>();
+    List<QuestionOptions> arrTaskOption = List<QuestionOptions>();
     AssessmentTasks currentAssessmentTask;
     int totalTask;
     int currentTaskIndex;
@@ -55,6 +58,12 @@ class _StartAssessmentState extends State<StartAssessment> {
         if(this.totalTask > 0){
             setState(() {
               this.currentAssessmentTask = this.arrAssessmentTask[currentTaskIndex];
+              if(this.currentAssessmentTask.responses != null) {
+                List arr = json.decode(this.currentAssessmentTask.responses);
+                arr.forEach((v) {
+                  this.arrTaskOption.add(new QuestionOptions.fromJSON(v));
+                });
+              }
             });
         } else {
             setState(() {
@@ -270,6 +279,13 @@ class _StartAssessmentState extends State<StartAssessment> {
           setState(() {
             this.arrSelectedOption.clear();
             this.currentAssessmentTask = this.arrAssessmentTask[this.currentTaskIndex];
+            this.arrTaskOption.clear();
+            if(this.currentAssessmentTask.responses != null) {
+                List arr = json.decode(this.currentAssessmentTask.responses);
+                arr.forEach((v) {
+                  this.arrTaskOption.add(new QuestionOptions.fromJSON(v));
+                });
+              }
           });
           
         } else {
@@ -364,7 +380,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                   }
                   setState(() {
                       this.currentAssessmentTask.result = result;
-                      this.currentAssessmentTask.assessmentTaskAnswerIdResponseId = answer;
+                      this.currentAssessmentTask.assessmentTaskAnswerResponseText = answer;
                       this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
                   });
               }
@@ -385,7 +401,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                   }
                   setState(() {
                       this.currentAssessmentTask.result = result;
-                      this.currentAssessmentTask.assessmentTaskAnswerIdResponseId = answer;
+                      this.currentAssessmentTask.assessmentTaskAnswerResponseText = answer;
                       this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
                   });
               }
@@ -401,7 +417,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   /// in single, multiple and bool task if option exsits than remove else add.
   ///  its take index as int parameter
   void itemChange(int index){
-    QuestionOptions questionOptione = this.currentAssessmentTask.responses[index];
+    QuestionOptions questionOptione = this.arrTaskOption[index];
     setState(() {
       //inputs[index] = val;
       if(this.currentAssessmentTask.assessmentTaskType == QuestionType.question_singleAnswer || this.currentAssessmentTask.assessmentTaskType == QuestionType.question_boolAnswer){
@@ -640,7 +656,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   /// buildQuestionTiles return tile for listview
   /// Tile have single ticke, and check anc uncheck icon
   Widget buildQuestionTiles(BuildContext context, index){
-    QuestionOptions questionOptione = this.currentAssessmentTask.responses[index];
+    QuestionOptions questionOptione = this.arrTaskOption[index];
 
       bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
       if(isSubmitAnswer == false){
@@ -1348,6 +1364,10 @@ class _StartAssessmentState extends State<StartAssessment> {
         }
 
     }
+    bool isYoutubeURL = false;
+    if(this.currentAssessmentTask.assessmentTaskAssetUrl.contains('https://youtu.be/')){
+        isYoutubeURL = true;
+    } 
     
     return Expanded(
       child: Container(
@@ -1428,7 +1448,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                 constraints: BoxConstraints(
                                   minHeight: 100
                                 ),
-                                child: customVideoPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl)
+                                child: isYoutubeURL?YoutubeVideoPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl):customVideoPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl)
                               )
                               ),
                             ),
