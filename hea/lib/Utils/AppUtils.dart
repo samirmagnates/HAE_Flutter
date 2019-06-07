@@ -3,6 +3,8 @@ import 'package:flutter/rendering.dart';
 import 'package:hea/Utils/SharedPreferences.dart';
 import 'package:hea/Utils/connectivity.dart';
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 class AppUtils{
     
     static Future getAppUserToken() async{
@@ -74,6 +76,41 @@ class AppUtils{
         }
     }
 
+    static Future<String> getLocalPath(String folderName) async{
+      final Directory appDirectory = await getApplicationDocumentsDirectory();
+      final String directory = '${appDirectory.path}/Document/$folderName';
+      /*final directory = new Directory(folderDirectory);
+      directory.exists().then((isThere){
+        if(isThere == false){
+
+        }
+      });*/
+
+      await Directory(directory).create(recursive: true);
+      return directory;
+    }
+
+    static Future<void> deleteLocalFolder(String folderName) async{
+      final Directory appDirectory = await getApplicationDocumentsDirectory();
+      final String directory = '${appDirectory.path}/Document/$folderName';
+      /*final directory = new Directory(folderDirectory);
+      directory.exists().then((isThere){
+        if(isThere == false){
+
+        }
+      });*/
+
+      //await Directory(directory).create(recursive: true);
+      try {
+        var res = await Directory(directory).delete(recursive: true);
+         print('res >>> $res');
+      } catch (e){
+         print('res >>> ${e.toString()}');
+      }
+      
+     
+    }
+
     
 }
 
@@ -128,8 +165,7 @@ class ThemeImage{
     static const image_pause = "assets/images/pause.png";
     static const image_play = "assets/images/Play.png";
     static const image_stop = "assets/images/Stop.png";
-    
-
+    static const image_camera = "assets/images/camera.png";
     
 }
 
@@ -144,7 +180,7 @@ class AppMessage{
     static const String kError_EnterUserName = 'Please enter username';
     static const String kError_EnterPassword = 'Please enter password';
     static const String kError_NoInternet = 'Netwrok not availabel!';
-    static const String kError_SomethingWentWrong = 'Something went wronge!';
+    static const String kError_SomethingWentWrong = 'Something went wrong!';
     static const String kError_QuestionSelecteError = 'Please select your answer from given option!';
     static const String kError_QuestionInputError = 'Please input your answer!';
     static const String kError_NoAssessment = 'Candidate have no assessment!';

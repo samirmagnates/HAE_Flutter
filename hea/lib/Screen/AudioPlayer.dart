@@ -6,7 +6,7 @@ import 'package:audioplayer/audioplayer.dart';
 import 'package:flutter/material.dart';
 import 'package:hea/Utils/AppUtils.dart';
 import 'package:http/http.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 typedef void OnError(Exception exception);
 
@@ -15,8 +15,9 @@ enum PlayerState { stopped, playing, paused }
 class CustomAudioPlayer extends StatefulWidget {
   @override
   
-  CustomAudioPlayer({Key key,@required this.url }): super(key:key);
+  CustomAudioPlayer({Key key,@required this.url,@required this.taskUuid }): super(key:key);
   String url;
+  String taskUuid;
   _CustomAudioPlayerState createState() => _CustomAudioPlayerState();
 }
 
@@ -28,12 +29,9 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
   AudioPlayer audioPlayer;
 
   String localFilePath;
-
   PlayerState playerState = PlayerState.stopped;
-
   get isPlaying => playerState == PlayerState.playing;
   get isPaused => playerState == PlayerState.paused;
-
   get durationText =>
       duration != null ? duration.toString().split('.').first : '';
   get positionText =>
@@ -55,8 +53,7 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
     audioURL = widget.url;
     duration = new Duration(seconds: 0);
     _loadFile();
-    initAudioPlayer();
-    
+     initAudioPlayer();
   }
 
   @override
@@ -68,7 +65,7 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
     audioPlayer.stop();
   }
 
-  void initAudioPlayer(){
+  Future initAudioPlayer() async{
     audioPlayer = new AudioPlayer();
     _positionSubscription = audioPlayer.onAudioPositionChanged.listen((p) => setState(() => position = p));
     _audioPlayerStateSubscription =
@@ -94,7 +91,9 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
 
   Future play() async {
     try{
-      await audioPlayer.play(audioURL);
+      //await audioPlayer.play(audioURL);
+      await audioPlayer.play(localFilePath, isLocal: true);
+      setState(() => playerState = PlayerState.playing);
     } catch (Exception){
       setState(() {
         isDownloading = false;
@@ -160,18 +159,23 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
         setState(() {
         isDownloading = true;
         });
-        final bytes = await _loadFileBytes(audioURL,
+
+        String pathFolder = await AppUtils.getLocalPath(widget.taskUuid);
+        final file = new File('$pathFolder/audio${path.extension(audioURL)}');
+
+        if(await AppUtils.isNetwrokAvailabe(context) == true){
+            final bytes = await _loadFileBytes(audioURL,
             onError: (Exception exception) =>
                 print('_loadFile => exception $exception'));
+           await file.writeAsBytes(bytes);
+        } 
 
-        final dir = await getApplicationDocumentsDirectory();
-        final file = new File('${dir.path}/audio.mp3');
-
-        await file.writeAsBytes(bytes);
-        if (await file.exists())
-          setState(() {
+        if (await file.exists()){
+           setState(() {
             localFilePath = file.path;
           });
+        }
+         
 
         setState(() {
           isDownloading = false;
@@ -318,7 +322,7 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 IconButton(
-                  onPressed: isPlaying ? null : () => play(),
+                  onPressed: isPlaying ? () => pause() : () => play(),
                   iconSize: 100.0,
                   icon: isPlaying?Image.asset(ThemeImage.image_pause):Image.asset(ThemeImage.image_play),
                   color: Colors.cyan),

@@ -33,8 +33,8 @@ class AssessmentMetaData {
     assessmentName = json['assessment_name'];
     assessmentIntroduction = json['assessment_introduction'];
     assessmentPassmark = json['assessment_passmark'];
-    assessmentObtainmark = json['assessment_obtainmark'] ? json['assessment_obtainmark']:'';
-    assessmentResult = json['assessment_result'] ? json['assessment_result']:'';
+    assessmentObtainmark = json['assessment_obtainmark'] != null ? json['assessment_obtainmark']:'';
+    assessmentResult = json['assessment_result'] != null ? json['assessment_result']:'';
   }
 
   Map<String, dynamic> toJson() {

@@ -1,5 +1,5 @@
 import 'package:hea/Model/QuestionOptions.dart';
-
+import 'dart:convert';
 class AssessmentTasks {
   String assessmentTaskUuid;
   String assessmentTaskType;
@@ -41,15 +41,17 @@ class AssessmentTasks {
       this.assessorUuid}
   );
 
-  AssessmentTasks.fromJSON(Map<String, dynamic> json) {
-    assessmentTaskUuid = json['assessment_task_uuid'];
-    assessmentTaskType = json['assessment_task_type'];
-    assessmentTaskCorrectResponseId = json['assessment_task_correct_response_id'];
-    assessmentTaskCorrectResponseText = json['assessment_task_correct_response_text'];
-    assessmentTaskAssetUrl = json['assessment_task_asset_url'];
-    score = json['score'];
-    prompt = json['prompt'];
-    responses = json['responses'];
+  AssessmentTasks.fromJSON(Map<String, dynamic> jsonRes) {
+    assessmentTaskUuid = jsonRes['assessment_task_uuid'];
+    assessmentTaskType = jsonRes['assessment_task_type'];
+    assessmentTaskCorrectResponseId = jsonRes['assessment_task_correct_response_id'];
+    assessmentTaskCorrectResponseText = jsonRes['assessment_task_correct_response_text'];
+    assessmentTaskAssetUrl = jsonRes['assessment_task_asset_url'];
+    score = jsonRes['score'];
+    prompt = jsonRes['prompt'];
+    //var jsonString = json.encode(jsonRes['responses']);
+    var jsonString = jsonEncode(jsonRes['responses']);
+    responses = jsonString;
     /*if (json['responses'] != null) {
       responses = new List<QuestionOptions>();
       List arr = json['responses'];
@@ -58,13 +60,13 @@ class AssessmentTasks {
       });
     }*/
 
-    assessmentTaskAnswerIdResponseId = json['assessment_task_answer_response_id']?json['assessment_task_answer_response_id']:'';
-    assessmentTaskAnswerResponseText = json['assessment_task_answer_response_text']?json['assessment_task_answer_response_text']:'';
-    result = json['result']?json['result']:'';
-    assessmentTaskUploadFormat = json['assessment_task_upload_format']?json['assessment_task_upload_format']:'';
-    assessmentTaskLocalFile = json['assessment_task_local_file']?json['assessment_task_local_file']:'';
-    assessmentUuid = json['assessment_uuid']?json['assessment_uuid']:'';
-    assessorUuid = json['assessor_uuid']?json['assessor_uuid']:'';
+    assessmentTaskAnswerIdResponseId = jsonRes['assessment_task_answer_response_id'] != null ? jsonRes['assessment_task_answer_response_id']:'';
+    assessmentTaskAnswerResponseText = jsonRes['assessment_task_answer_response_text'] != null ? jsonRes['assessment_task_answer_response_text']:'';
+    result = jsonRes['result'] != null ? jsonRes['result']:'';
+    assessmentTaskUploadFormat = jsonRes['assessment_task_upload_format'] != null ? jsonRes['assessment_task_upload_format']:'';
+    assessmentTaskLocalFile = jsonRes['assessment_task_local_file'] != null ? jsonRes['assessment_task_local_file']:'';
+    assessmentUuid = jsonRes['assessment_uuid'] != null ? jsonRes['assessment_uuid']:'';
+    assessorUuid = jsonRes['assessor_uuid'] != null ? jsonRes['assessor_uuid']:'';
     
   }
 

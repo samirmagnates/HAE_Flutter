@@ -196,7 +196,7 @@ class DBManager{
         
         final db = await database;
         var res = await db.rawInsert(
-          "INSERT INTO ${AppDatabase.tbl_name_assessment_meta} (${AppDatabase.tbl_assessment_meta_field_assessor_uuid},${AppDatabase.tbl_assessment_meta_field_assessor_name},${AppDatabase.tbl_assessment_meta_field_candidate_uuid},${AppDatabase.tbl_assessment_meta_field_candidate_name},${AppDatabase.tbl_assessment_meta_field_assessment_uuid},${AppDatabase.tbl_assessment_meta_field_assessment_name},${AppDatabase.tbl_assessment_meta_field_assessment_introduction},${AppDatabase.tbl_assessment_meta_field_assessment_passmark},${AppDatabase.tbl_assessment_meta_field_assessment_obtainmark},${AppDatabase.tbl_assessment_meta_field_assessment_result},${AppDatabase.tbl_assessment_meta_field_assessment_obtainmark},${AppDatabase.tbl_assessment_meta_field_assessment_result})"
+          "INSERT INTO ${AppDatabase.tbl_name_assessment_meta} (${AppDatabase.tbl_assessment_meta_field_assessor_uuid},${AppDatabase.tbl_assessment_meta_field_assessor_name},${AppDatabase.tbl_assessment_meta_field_candidate_uuid},${AppDatabase.tbl_assessment_meta_field_candidate_name},${AppDatabase.tbl_assessment_meta_field_assessment_uuid},${AppDatabase.tbl_assessment_meta_field_assessment_name},${AppDatabase.tbl_assessment_meta_field_assessment_introduction},${AppDatabase.tbl_assessment_meta_field_assessment_passmark},${AppDatabase.tbl_assessment_meta_field_assessment_obtainmark},${AppDatabase.tbl_assessment_meta_field_assessment_result})"
           " VALUES ('$assessor_uuid','$assessor_name','$candidate_uuid','$candidate_name','$assessment_uuid','$assessment_name','$assessment_introduction','$assessment_passmark','$assessmentObtainmark','$assessmentResult')");
         return res;
     }
@@ -232,7 +232,7 @@ class DBManager{
     }
 
 
-    insertAssessmetnsTask(AssessmentTasks task) async {
+    insertAssessmetnsTask(AssessmentTasks task, String assessmentuuid, String assessoruuid) async {
 
 
         String assessmentTaskUuid = task.assessmentTaskUuid;
@@ -249,21 +249,20 @@ class DBManager{
         //List<QuestionOptions> answers;
         String assessmentTaskUploadFormat = task.assessmentTaskUploadFormat;
         String assessmentTaskLocalFile = task.assessmentTaskLocalFile;
-        String assessmentUuid = task.assessmentUuid;
-        String assessorUuid = task.assessorUuid;
+        String assessmentUuid = task.assessmentUuid != ''?task.assessmentUuid:assessmentuuid;
+        String assessorUuid = task.assessorUuid != ''? task.assessorUuid:assessoruuid;
 
         final db = await database;
 
-        await db.transaction((txn) async {
-          var res = await txn.rawInsert(
-          "INSERT INTO ${AppDatabase.tbl_name_tasks} (${AppDatabase.tbl_tasks_field_assessment_task_uuid},${AppDatabase.tbl_tasks_field_assessment_task_type},${AppDatabase.tbl_tasks_field_score},${AppDatabase.tbl_tasks_field_prompt},${AppDatabase.tbl_tasks_field_result},${AppDatabase.tbl_tasks_field_responses},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_id},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_id},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_text},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_text},${AppDatabase.tbl_tasks_field_assessment_task_asset_url},${AppDatabase.tbl_tasks_field_assessment_task_upload_format},${AppDatabase.tbl_tasks_field_assessment_task_local_file},${AppDatabase.tbl_tasks_field_assessment_uuid},${AppDatabase.tbl_tasks_field_assessor_uuid})"
-          " VALUES ('$assessmentTaskUuid','$assessmentTaskType','$assessmentTaskCorrectResponseId','$assessmentTaskAnswerIdResponseId','$assessmentTaskCorrectResponseText','$assessmentTaskAnswerResponseText','$assessmentTaskAssetUrl','$score','$prompt','$result','$responses','$assessmentTaskUploadFormat','$assessmentTaskLocalFile','$assessmentUuid','$assessorUuid')");
-           print('inserted1: $res');
-          return res;
-        });
+        // var res = await db.rawInsert(
+        //   "INSERT INTO ${AppDatabase.tbl_name_tasks} (${AppDatabase.tbl_tasks_field_assessment_task_uuid},${AppDatabase.tbl_tasks_field_assessment_task_type},${AppDatabase.tbl_tasks_field_score},${AppDatabase.tbl_tasks_field_prompt},${AppDatabase.tbl_tasks_field_result},${AppDatabase.tbl_tasks_field_responses},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_id},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_id},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_text},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_text},${AppDatabase.tbl_tasks_field_assessment_task_asset_url},${AppDatabase.tbl_tasks_field_assessment_task_upload_format},${AppDatabase.tbl_tasks_field_assessment_task_local_file},${AppDatabase.tbl_tasks_field_assessment_uuid},${AppDatabase.tbl_tasks_field_assessor_uuid})"
+        //   " VALUES ('$assessmentTaskUuid','$assessmentTaskType','$assessmentTaskCorrectResponseId','$assessmentTaskAnswerIdResponseId','$assessmentTaskCorrectResponseText','$assessmentTaskAnswerResponseText','$assessmentTaskAssetUrl','$score','$prompt','$result','$responses','$assessmentTaskUploadFormat','$assessmentTaskLocalFile','$assessmentUuid','$assessorUuid')");
+        //    print('inserted1: $res');
 
+        var res = await db.rawInsert('INSERT INTO ${AppDatabase.tbl_name_tasks} (${AppDatabase.tbl_tasks_field_assessment_task_uuid},${AppDatabase.tbl_tasks_field_assessment_task_type},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_id},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_id},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_text},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_text},${AppDatabase.tbl_tasks_field_assessment_task_asset_url},${AppDatabase.tbl_tasks_field_score},${AppDatabase.tbl_tasks_field_prompt},${AppDatabase.tbl_tasks_field_result},${AppDatabase.tbl_tasks_field_responses},${AppDatabase.tbl_tasks_field_assessment_task_upload_format},${AppDatabase.tbl_tasks_field_assessment_task_local_file},${AppDatabase.tbl_tasks_field_assessment_uuid},${AppDatabase.tbl_tasks_field_assessor_uuid}) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',[assessmentTaskUuid,assessmentTaskType,assessmentTaskCorrectResponseId,assessmentTaskAnswerIdResponseId,assessmentTaskCorrectResponseText,assessmentTaskAnswerResponseText,assessmentTaskAssetUrl,score,prompt,result,responses,assessmentTaskUploadFormat,assessmentTaskLocalFile,assessmentUuid,assessorUuid]);
+        print('inserted1: $res');
+        return res;
 
-        
     }
 
     updateAssessmetnsTask(AssessmentTasks task) async {
@@ -286,5 +285,13 @@ class DBManager{
       List<AssessmentTasks> list =
           res.isNotEmpty ? res.map((c) => AssessmentTasks.fromJSON(c)).toList() : [];
       return list;
+    }
+
+    clearDataBase(String assessor_uuid) async {
+      final db = await database;
+
+      db.delete(AppDatabase.tbl_name_assessments, where: "${AppDatabase.tbl_assessments_field_assessor_uuid} = ?", whereArgs: [assessor_uuid]);
+      db.delete(AppDatabase.tbl_name_assessment_meta, where: "${AppDatabase.tbl_assessment_meta_field_assessor_uuid} = ?", whereArgs: [assessor_uuid]);
+      db.delete(AppDatabase.tbl_name_tasks, where: "${AppDatabase.tbl_tasks_field_assessor_uuid} = ?", whereArgs: [assessor_uuid]);
     }
 }

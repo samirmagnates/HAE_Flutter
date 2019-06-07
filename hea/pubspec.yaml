@@ -30,6 +30,7 @@ dependencies:
   intl: ^0.15.7
   contacts_service: ^0.2.6
   add_2_calendar: ^1.2.2
+  device_calendar: ^0.1.2+2
   permission_handler: '^3.0.0'
   cached_network_image: ^0.8.0
   audioplayer: ^0.5.2
@@ -39,6 +40,10 @@ dependencies:
   flutter_youtube_view: ^1.1.4
   sqflite: ^1.1.5
   path_provider: 0.5.0+1
+  camera: ^0.5.2+1
+  path: ^1.6.2
+  image_picker: ^0.6.0+9
+
 
 
 
@@ -64,7 +69,7 @@ flutter:
     - assets/images/pause.png
     - assets/images/Play.png
     - assets/images/Stop.png
-    
+    - assets/images/camera.png
     
     
   fonts:

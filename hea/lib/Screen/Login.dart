@@ -115,7 +115,7 @@ class _LoginState extends State<Login> {
             if(response[ApiResponsKey.success] == true){
               if(response[ApiResponsKey.data] != null){
                 data = response[ApiResponsKey.data];
-                SharedPreferencesManager.setObject(data, AppKey.appuser);
+                await SharedPreferencesManager.setObject(data, AppKey.appuser);
               }
             }else {
               

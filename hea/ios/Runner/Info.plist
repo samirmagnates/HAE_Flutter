@@ -27,9 +27,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCalendarsUsageDescription</key>
-	<string>This app requires calender access to function properly.</string>
+	<string>HAE app requires calender access to function properly.</string>
 	<key>NSContactsUsageDescription</key>
-	<string>This app requires contacts access to function properly.</string>
+	<string>HAE app requires contacts access to function properly.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>HAE app requires camera access to capture image or video for answer.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>HAE app requires microphone to record candidate answer.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

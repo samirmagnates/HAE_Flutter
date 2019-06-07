@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,13 +12,20 @@ import 'package:hea/Screen/AudioPlayer.dart';
 import 'package:hea/Screen/VideoPlayer.dart';
 import '../Screen/YoutubeVideoPlayer.dart';
 import 'dart:convert';
+import '../Screen/Camera.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:image_picker/image_picker.dart';
+
+ 
 
 class StartAssessment extends StatefulWidget {
   @override
 
-  StartAssessment({Key key,@required this.responsData}) : super(key: key);
+  StartAssessment({Key key,@required this.resMetadata,@required this.resAssessmentTask}) : super(key: key);
 
-  var responsData;
+  //var responsData;
+  AssessmentMetaData resMetadata;
+  List<AssessmentTasks> resAssessmentTask;
 
   _StartAssessmentState createState() => _StartAssessmentState();
 }
@@ -41,8 +50,34 @@ class _StartAssessmentState extends State<StartAssessment> {
   void initState() {
     // TODO: implement initState
     super.initState();
-
-    if(widget.responsData != null){
+    if(widget.resMetadata != null){
+      this.assessmentMetaData = widget.resMetadata;
+      candidateName = this.assessmentMetaData.candidateName != null? this.assessmentMetaData.candidateName : '';
+    }
+    if(widget.resAssessmentTask != null){
+        currentTaskIndex = 0;
+        this.arrAssessmentTask = widget.resAssessmentTask;
+        totalTask = this.arrAssessmentTask.length;
+        if(this.totalTask > 0){
+            setState(() {
+              this.currentAssessmentTask = this.arrAssessmentTask[currentTaskIndex];
+              if(this.currentAssessmentTask.responses != null) {
+                print('this.currentAssessmentTask.responses >> ${this.currentAssessmentTask.responses}');
+                var jsonString = jsonDecode(this.currentAssessmentTask.responses);
+                print('arr >> $jsonString');
+                List arr = jsonDecode(jsonString);
+                 arr.forEach((v) {
+                   this.arrTaskOption.add(new QuestionOptions.fromJSON(v));
+                 });
+              }
+            });
+        } else {
+            setState(() {
+              noDataMessage = 'No data found';
+            });
+        }
+    }
+    /*if(widget.responsData != null){
       
       if(widget.responsData['assessment_meta'] != null){
         Map meta = widget.responsData['assessment_meta'];
@@ -71,7 +106,7 @@ class _StartAssessmentState extends State<StartAssessment> {
             });
         }
       }
-    }
+    }*/
   }
 
   @override
@@ -99,7 +134,14 @@ class _StartAssessmentState extends State<StartAssessment> {
           height: 35,
           child: IconButton(
             icon: Image.asset(ThemeImage.image_back),
-            onPressed: () => Navigator.pop(context),//Navigator.of(context).pop(),
+            onPressed: () async {
+              try {
+                await AppUtils.deleteLocalFolder(this.assessmentMetaData.assessmentUuid);
+              } catch (e){
+                print('back res >>> ${e.toString()}');
+              }
+              Navigator.pop(context);//Navigator.of(context).pop(),
+            }  
         )
         ), 
         title: FittedBox(
@@ -230,6 +272,9 @@ class _StartAssessmentState extends State<StartAssessment> {
         break; 
         case QuestionType.question_videoPlayAnswer:
           return questionVideoPlayerAnswer();
+        break;
+        case QuestionType.question_imageCaptureAnswer:
+          return questionCaptureImageViewAnswer();
         break; 
         
         default:
@@ -281,10 +326,17 @@ class _StartAssessmentState extends State<StartAssessment> {
             this.currentAssessmentTask = this.arrAssessmentTask[this.currentTaskIndex];
             this.arrTaskOption.clear();
             if(this.currentAssessmentTask.responses != null) {
-                List arr = json.decode(this.currentAssessmentTask.responses);
-                arr.forEach((v) {
-                  this.arrTaskOption.add(new QuestionOptions.fromJSON(v));
-                });
+                var jsonString = jsonDecode(this.currentAssessmentTask.responses);
+                if (jsonString != null){
+                  List arr = jsonDecode(jsonString);
+                  if(arr != null){
+                    arr.forEach((v) {
+                    this.arrTaskOption.add(new QuestionOptions.fromJSON(v));
+                    });
+                  }
+                 
+                }
+                
               }
           });
           
@@ -302,7 +354,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   /// hide check butten and show next button for next task
   void checkForResult(){
 
-    if(this.currentAssessmentTask.result == null){
+    if(this.currentAssessmentTask.result == null || this.currentAssessmentTask.result.isEmpty){
         switch (this.currentAssessmentTask.assessmentTaskType) {
         case QuestionType.question_singleAnswer:
               if(arrSelectedOption == null || arrSelectedOption.isEmpty){
@@ -440,7 +492,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   /// As per candidate answer assessor diside pass or fail
   void clickPassFail(bool isPass){
       String result = isPass?'pass':'fail';
-      if(this.currentAssessmentTask.result == null){
+      if(this.currentAssessmentTask.result == null || this.currentAssessmentTask.result.isEmpty){
         switch (this.currentAssessmentTask.assessmentTaskType) {
         case QuestionType.question_imageViewAnswer:
               setState(() {
@@ -505,7 +557,7 @@ class _StartAssessmentState extends State<StartAssessment> {
 
   Widget questionOptionAnswer(){
 
-    bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null && this.currentAssessmentTask.result.isNotEmpty?true:false;
     return Expanded(
       child: Container(
         child: Column(
@@ -596,7 +648,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                 shrinkWrap: true,
                                 physics: NeverScrollableScrollPhysics(),
                                 itemExtent: 50,
-                                itemCount: this.currentAssessmentTask.responses.length,
+                                itemCount: this.arrTaskOption.length,
                                 itemBuilder: (BuildContext context, i){
                                   return buildQuestionTiles(context, i);
                                   //return Text('Hello');
@@ -658,7 +710,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   Widget buildQuestionTiles(BuildContext context, index){
     QuestionOptions questionOptione = this.arrTaskOption[index];
 
-      bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+      bool isSubmitAnswer = this.currentAssessmentTask.result != null && this.currentAssessmentTask.result.isNotEmpty?true:false;
       if(isSubmitAnswer == false){
 
           Color select_color = ThemeColor.theme_dark;
@@ -820,7 +872,7 @@ class _StartAssessmentState extends State<StartAssessment> {
 
   Widget questionTextInputAnswer(){
 
-    bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null && this.currentAssessmentTask.result.isNotEmpty?true:false;
 
     Color select_color = ThemeColor.theme_blue;
     Widget selected_icon = SizedBox(width: 0,height: 0,);
@@ -1045,7 +1097,7 @@ class _StartAssessmentState extends State<StartAssessment> {
 
   Widget questionImageViewAnswer(){
 
-    bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null && this.currentAssessmentTask.result.isNotEmpty?true:false;
 
     Color select_color = ThemeColor.theme_blue;
     Widget selected_icon = SizedBox(width: 0,height: 0,);
@@ -1194,7 +1246,7 @@ class _StartAssessmentState extends State<StartAssessment> {
 
   Widget questionAudioPlayerAnswer(){
 
-    bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null && this.currentAssessmentTask.result.isNotEmpty?true:false;
 
     Color select_color = ThemeColor.theme_blue;
     Widget selected_icon = SizedBox(width: 0,height: 0,);
@@ -1295,7 +1347,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                 constraints: BoxConstraints(
                                   minHeight: 100
                                 ),
-                                child: CustomAudioPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl)
+                                child: CustomAudioPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl,taskUuid:this.assessmentMetaData.assessmentUuid),
                               )
                             )
                           ],
@@ -1338,7 +1390,7 @@ class _StartAssessmentState extends State<StartAssessment> {
 
   Widget questionVideoPlayerAnswer(){
 
-    bool isSubmitAnswer = this.currentAssessmentTask.result != null?true:false;
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null && this.currentAssessmentTask.result.isNotEmpty?true:false;
 
     Color select_color = ThemeColor.theme_blue;
     Widget selected_icon = SizedBox(width: 0,height: 0,);
@@ -1453,6 +1505,238 @@ class _StartAssessmentState extends State<StartAssessment> {
                               ),
                             ),
                             
+                          ],
+                        ),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                              SizedBox(
+                                height: 30,
+                                child: Container(
+                                ),
+                              ),
+                              Container(
+                                height: 50,
+                                child: buttonPassFail()
+                              ),
+                              SizedBox(
+                                height: 20,
+                                child: Container(
+                                ),
+                              ),
+                          ]
+                        )
+                      )
+                    ],
+                  ),
+                  
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+    
+  }
+
+  /// Question ImageView return widget show image from url.
+  /// pass and fail button for submit resut and  go to next task
+
+  Widget questionCaptureImageViewAnswer(){
+
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null && this.currentAssessmentTask.result.isNotEmpty?true:false;
+
+    Color select_color = ThemeColor.theme_blue;
+    Widget selected_icon = SizedBox(width: 0,height: 0,);
+    bool isEnable = true;
+    if(isSubmitAnswer == true){
+        isEnable = false;
+        if(this.currentAssessmentTask.result == 'pass'){
+          select_color = ThemeColor.ans_green;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_yes),
+          );
+        } else {
+          select_color = ThemeColor.ans_Red;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_no),
+          );
+        }
+
+    }
+    
+    return Expanded(
+      child: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+              SizedBox(
+                height: 10,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 15),
+                child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                    Text(
+                      'Capture',
+                        style: TextStyle(
+                          color: ThemeColor.theme_blue,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                    Text(
+                      '${this.currentTaskIndex + 1}/${this.totalTask}',
+                        style: TextStyle(
+                          color: ThemeColor.theme_dark,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Expanded(
+                child: Container(
+                  child: CustomScrollView(
+                    slivers: <Widget>[
+                      SliverList(
+                        delegate: SliverChildListDelegate([
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 15),
+                            child: Text(
+                            this.currentAssessmentTask.prompt!=null?this.currentAssessmentTask.prompt:'',
+                            style: TextStyle(
+                              color: ThemeColor.theme_dark,
+                              fontFamily: ThemeFont.font_pourceSanPro,
+                              fontSize: 20.0,
+                              fontWeight: FontWeight.w600
+                            ),
+                            textAlign: TextAlign.left,
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 10,horizontal: 15),
+                            child: Container(
+                              alignment: Alignment.topLeft,
+                              decoration: BoxDecoration(
+                              ),
+                              child: IconButton(
+                                icon: Image.asset(ThemeImage.image_camera),
+                                onPressed: () async {
+                                  Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.camera]);
+                                  //CameraCapture();
+                                  var picture = await ImagePicker.pickImage(
+                                    source: ImageSource.camera,
+                                  );
+                                  
+                                  if(this.currentAssessmentTask.assessmentTaskLocalFile.isEmpty){
+                                      final file = new File('${this.currentAssessmentTask.assessmentTaskLocalFile}');
+                                      if (await file.exists()){
+                                          await file.delete();
+                                          this.currentAssessmentTask.assessmentTaskLocalFile = '';
+                                      }
+                                  }
+                                  String pathFolder = await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
+                                  String fileExtesion = 'jpeg';
+                                  if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
+                                      List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
+                                      fileExtesion = arrExtention.first;
+                                  } 
+                                  final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+                                  final String filePath = '$pathFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+                                  var res2 = await picture.copy(filePath);
+                                  print('res2 >> $res2');
+
+                                  setState(() {
+                                      this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
+                                      this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+                                  });
+
+                                  },
+                              ),
+                            ),
+                          ),
+                          
+                        ]),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: 100
+                                ),
+                                child: this.currentAssessmentTask.assessmentTaskLocalFile.isEmpty?
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 5),
+                                  height: 200,
+                                  child: Stack(
+                                    children: <Widget>[
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey
+                                        ),
+                                        
+                                      ),
+                                      Center(child: Text(
+                                        'Photo',
+                                        style: TextStyle(
+                                          color: ThemeColor.theme_dark,
+                                          fontFamily: ThemeFont.font_pourceSanPro,
+                                          fontSize: 30.0,
+                                          fontWeight: FontWeight.bold
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),)
+                                    ],
+                                  ),
+                                ):
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 5),
+                                  height: 200,
+                                  child: Stack(
+                                    children: <Widget>[
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white
+                                        ),
+                                        
+                                      ),
+                                      Center(
+                                        /*child:CachedNetworkImage(
+                                          imageUrl: this.currentAssessmentTask.assessmentTaskLocalFile,
+                                          placeholder: (context,url) => Center(
+                                            child: new CircularProgressIndicator()
+                                          )
+                                        )*/
+                                        child: Image.file(File(this.currentAssessmentTask.assessmentTaskLocalFile)),
+                                      )
+                                    ],
+                                  ),
+                                )
+                              )
+                            )
                           ],
                         ),
                       ),

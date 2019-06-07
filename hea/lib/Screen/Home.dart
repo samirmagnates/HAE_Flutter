@@ -6,7 +6,8 @@ import 'package:hea/Model/Candidate.dart';
 import 'package:hea/Utils/apimanager.dart';
 import 'package:hea/Utils/DbManager.dart';
 import 'package:contacts_service/contacts_service.dart';
-import 'package:add_2_calendar/add_2_calendar.dart';
+//import 'package:add_2_calendar/add_2_calendar.dart';
+import 'package:device_calendar/device_calendar.dart';
 import 'package:hea/Screen/StartAssessment.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:hea/Model/AssessmentTasks.dart';
@@ -18,6 +19,8 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+
+  DeviceCalendarPlugin _deviceCalendarPlugin;
   static final GlobalKey<ScaffoldState> _scaffoldKeyHome = new GlobalKey<ScaffoldState>();
   
   Candidate assessmentSelected;
@@ -26,6 +29,7 @@ class _HomeState extends State<Home> {
   bool _isAddToDeviceTapped = false;
   bool _isDownloadTapped = false;
   bool _isStartAssessmentTapped = false;
+  bool _isDeleteTap = false;
 
 
   String noDataMessage = '';
@@ -38,12 +42,14 @@ class _HomeState extends State<Home> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    _deviceCalendarPlugin = new DeviceCalendarPlugin();
     getBasicRequireParameters();
     getAessessment();
   }
 
   void getBasicRequireParameters() async {
       appUserToken = await AppUtils.getAppUserToken() ;
+      Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.calendar,PermissionGroup.contacts]);
   }
   
   @override
@@ -65,9 +71,15 @@ class _HomeState extends State<Home> {
           IconButton(
           iconSize: 20,
           icon: Image.asset(ThemeImage.image_delete),
-          onPressed: (){
-            
-          },)
+          //onPressed: () => _isDeleteTap?null:_performDeletAction(),
+          onPressed: () async{
+            if(_isDeleteTap == false)  {
+              //await _performDeletAction();
+               await DBManager.db.clearDataBase(this.assessmentSelected.ASSESSOR_UUID);
+                Navigator.of(context).pop();
+            } 
+          },
+          )
         ],
         leading: IconButton(
           padding: EdgeInsets.all(12.0),
@@ -108,6 +120,35 @@ class _HomeState extends State<Home> {
         height: 0.0,
       ),
     );
+  }
+
+  _performDeletAction()async{
+    setState(() {
+          _isLoading = true;
+          _isDeleteTap = true;
+    });
+
+    for (int i = 0; i < this.arrCadidates.length; i++){
+        Candidate can = this.arrCadidates[i];
+        if (can.IS_ADD_CONTACT == 1){
+            Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.contacts]);
+            PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.contacts];
+            if(_permissionStatus == PermissionStatus.granted){
+                await _deleteContact(can);
+            } else {
+                openPermisionPopupBox('Contact Access Denie','Enable contact service for application form setting');
+            }
+        }
+        if (can.IS_ADD_CALENDER == 1){
+            Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.calendar]);
+            PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.contacts];
+            if(_permissionStatus == PermissionStatus.granted){
+                await _deleteCalenderEvent(can);
+            } else {
+                openPermisionPopupBox('Contact Access Denie','Enable contact service for application form setting');
+            }
+        }
+    }
   }
 
   Widget widgetNoDataFount(){
@@ -247,7 +288,7 @@ class _HomeState extends State<Home> {
                            height: 20,
                           ),
                           Text(
-                            'Title :${this.assessmentSelected.ASSESSMENT_TITLE}',
+                            'Title: ${this.assessmentSelected.ASSESSMENT_TITLE}',
                             textAlign: TextAlign.left,
                             style: TextStyle(
                                 fontFamily: ThemeFont.font_pourceSanPro,
@@ -501,8 +542,12 @@ class _HomeState extends State<Home> {
                       await DBManager.db.insertAssessmetns(candidate);
                     } 
                     var response =  await DBManager.db.getAssessements(candidate.ASSESSMENT_UUID,candidate.ASSESSOR_UUID);
-                    setState(() {
+                    setState(()  {
                       this.assessmentSelected = response != null?response as Candidate:null;
+                      if(this.assessmentSelected != null){
+                           updateCandidateList();
+                      }
+
                     });
                 } else {
                    setState(() {
@@ -542,10 +587,12 @@ class _HomeState extends State<Home> {
           }
       }
     } else {
+
         AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
         setState(() {
-          this.assessmentSelected = null;
-        });
+            _isLoading = false;
+            this.assessmentSelected = null;
+          });
     }
   }
   
@@ -642,6 +689,9 @@ class _HomeState extends State<Home> {
           var response =  await DBManager.db.getAssessements(candidate.ASSESSMENT_UUID,candidate.ASSESSOR_UUID);
           setState(() {
             this.assessmentSelected = response != null?response as Candidate:null;
+            if(this.assessmentSelected != null){
+               updateCandidateList();
+            }
           });
       }
     }
@@ -671,7 +721,7 @@ class _HomeState extends State<Home> {
         }
 
         
-        if(isContactAdd == 1 && strAddCalender == 1 ){
+        if(isContactAdd == 1 && isCalenderEventAdded == 1 ){
             AppUtils.showInSnackBar(_scaffoldKeyHome,'Already added to device');
         }
         
@@ -682,62 +732,162 @@ class _HomeState extends State<Home> {
     }
 
     Future _addToContact() async {
-      
-        Contact newContct = Contact();
-        newContct.displayName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST + ' ' + this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
-        newContct.givenName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST;
-        newContct.familyName = this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
-        newContct.emails = [Item(label: 'email',value: this.assessmentSelected.ASSESSMENT_CANDIDATE_EMAIL)];
-        newContct.phones = [Item(label: 'phone',value: this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER)];
 
-        try{
-          await ContactsService.addContact(newContct);
-          this.assessmentSelected.IS_ADD_CONTACT = 1;
-          var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
-          if (res.isNotEmpty){
-            await DBManager.db.updateAssessmetns(this.assessmentSelected);
-          } 
-          /*var response =  await DBManager.db.getAssessements(candidate.ASSESSMENT_UUID,candidate.ASSESSOR_UUID);
-          setState(() {
-            this.assessmentSelected = response != null?response as Candidate:null;
-          });*/
+        Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.contacts]);
+        PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.contacts];
+
+        if(_permissionStatus == PermissionStatus.granted){
+            Contact newContct = Contact();
+            newContct.displayName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST + ' ' + this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
+            newContct.givenName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST;
+            newContct.familyName = this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
+             PostalAddress address = PostalAddress();
+            address.label = '${this.assessmentSelected.ASSESSMENT_ADDRESS_ADDRESS1}';
+            address.street = '${this.assessmentSelected.ASSESSMENT_ADDRESS_ADDRESS2}';
+            address.city = '${this.assessmentSelected.ASSESSMENT_ADDRESS_TOWNCITY}';
+            address.postcode = '${this.assessmentSelected.ASSESSMENT_ADDRESS_POSTCODE}';
+            address.region = '${this.assessmentSelected.ASSESSMENT_ADDRESS_COUNTY}';
+            address.country = '${this.assessmentSelected.ASSESSMENT_ADDRESS_COUNTRY}';
+            
+            newContct.postalAddresses = [address];//list;
+            
+            newContct.company = this.assessmentSelected.ASSESSMENT_ADDRESS_COMPANY;
+            newContct.emails = [Item(label: 'email',value: this.assessmentSelected.ASSESSMENT_CANDIDATE_EMAIL)];
+            newContct.phones = [Item(label: 'phone',value: this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER)];
+
+            try{
+              await ContactsService.addContact(newContct);
+              var allContacts = await ContactsService.getContacts();
+              var filtered = allContacts.where((c) => c.phones.any((phone) => phone.value.contains("${this.assessmentSelected.ASSESSMENT_CANDIDATE_NUMBER}"))).toList();
+
+              AppUtils.onPrintLog('calender >>> ${filtered.first.identifier}');
+              this.assessmentSelected.IS_ADD_CONTACT = 1;
+              this.assessmentSelected.CONTACT_ID = filtered.first.identifier;
+              var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
+              if (res.isNotEmpty){
+                await DBManager.db.updateAssessmetns(this.assessmentSelected);
+                await updateCandidateList();
+              } 
 
 
-        } on PlatformException catch(e){
-          openPermisionPopupBox('Contact ${e.message}','Enable contact service for application form setting');
-          //AppUtils.showInSnackBar(_scaffoldKey,'Contact ${e.message}');
+            } on PlatformException catch(e){
+              openPermisionPopupBox('Contact ${e.message}','Enable contact service for application form setting');
+              //AppUtils.showInSnackBar(_scaffoldKey,'Contact ${e.message}');
+            }
+        } else {
+            openPermisionPopupBox('Contact Access Denie','Enable contact service for application form setting');
         }
-        
+    }
+
+    Future _deleteContact(Candidate candidate) async {
+
+      try{
+        //var contact = await ContactsService.getContacts(query: 'identifier:${candidate.CONTACT_ID}');
+        var allContacts = await ContactsService.getContacts();
+        var filtered = allContacts.where((c) => c.identifier.contains("${candidate.CONTACT_ID}")).toList();
+        AppUtils.onPrintLog('calender >>> $filtered');
+        await ContactsService.deleteContact(filtered.first);
+      } on PlatformException catch(e){
+        //openPermisionPopupBox('Contact ${e.message}','Enable contact service for application form setting');
+        //AppUtils.showInSnackBar(_scaffoldKey,'Contact ${e.message}');
+      }
+
+    }
+
+    
+
+    Future _deleteCalenderEvent(Candidate candidate) async {
+
+      final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+      Calendar calendar = calendarsResult.data.first;
+      var createEventResult = await _deviceCalendarPlugin.deleteEvent(calendar.id, candidate.CALENDER_ID);
+      if (createEventResult.isSuccess) {
+          AppUtils.onPrintLog('calender >>> $createEventResult');
+      } else {
+        AppUtils.onPrintLog('calender error >>> ${createEventResult.errorMessages.join(' | ')}');
+      }
+
+    }
+    updateCandidateList() async{
+
+      for (int i = 0; i < this.arrCadidates.length; i++){
+        Candidate can = this.arrCadidates[i];
+        if (can.ASSESSMENT_ID == this.assessmentSelected.ASSESSMENT_ID){
+            this.arrCadidates[i] = this.assessmentSelected;
+            break;
+        }
+      }
     }
 
     Future _addToCalender() async {
       
       Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.calendar]);
       PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.calendar];
-
-
       if(_permissionStatus == PermissionStatus.granted){
-        String candidateFullName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST + ' ' + this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
+          String candidateFullName = this.assessmentSelected.ASSESSMENT_CANDIDATE_FIRST + ' ' + this.assessmentSelected.ASSESSMENT_CANDIDATE_LAST;
           DateTime startDate  = DateTime.parse(this.assessmentSelected.ASSESSMENT_APPOINTMENT);
-          DateTime endDate  = startDate.add(Duration(days: 1));
-        final Event event = Event(
+          DateTime endDate  = startDate.add(Duration(hours: 1));
+
+          final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+
+          Calendar calendar = calendarsResult.data.first;
+          String eventTitle = '$candidateFullName  assessment  of ${this.assessmentSelected.ASSESSMENT_TITLE}';
+          Event event = Event(calendar.id,title: eventTitle,start: startDate,end: endDate);
+
+          var createEventResult = await _deviceCalendarPlugin.createOrUpdateEvent(event);
+
+          if (createEventResult.isSuccess) {
+
+              AppUtils.onPrintLog('calender >>> ${event.eventId}');
+              AppUtils.onPrintLog('calender >>> $createEventResult');
+              //var getEventResult = await _deviceCalendarPlugin.retrieveEvents(calendar.id, RetrieveEventsParams(startDate: startDate, endDate: endDate));
+              this.assessmentSelected.IS_ADD_CALENDER = 1;
+              if(createEventResult.data.isNotEmpty){
+                  this.assessmentSelected.CALENDER_ID = createEventResult.data;
+              }
+              /*for(int i = 0; i < getEventResult.data.length; i++){
+                  Event eve = getEventResult.data[i] ;
+                  if(eve.title == eventTitle && eve.start == startDate && eve.end == endDate){
+                    this.assessmentSelected.CALENDER_ID = eve.eventId;
+                    break;
+                  }
+              }*/
+              
+              var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
+              if (res.isNotEmpty){
+                await DBManager.db.updateAssessmetns(this.assessmentSelected);
+                await updateCandidateList();
+              } 
+
+          } else {
+            AppUtils.onPrintLog('calender error >>> ${createEventResult.errorMessages.join(' | ')}');
+            
+          }
+        /*final Event event = Event(
           title: '$candidateFullName  assessment  of ${this.assessmentSelected.ASSESSMENT_TITLE}',
           description: this.assessmentSelected.ASSESSMENT_TITLE,
           startDate: startDate,
-          endDate: endDate
+          endDate: null
         );
         try{
 
-            await Add2Calendar.addEvent2Cal(event);
-            this.assessmentSelected.IS_ADD_CALENDER = 1;
-            var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
-            if (res.isNotEmpty){
-              await DBManager.db.updateAssessmetns(this.assessmentSelected);
-            } 
+            
+            bool isAdded = await Add2Calendar.addEvent2Cal(event);
+            if (isAdded == true){
+              AppUtils.onPrintLog('calender >>> $isAdded');
+              this.assessmentSelected.IS_ADD_CALENDER = 1;
+              var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
+              if (res.isNotEmpty){
+                await DBManager.db.updateAssessmetns(this.assessmentSelected);
+              } 
+            } else {
+
+            }
+            
           } on PlatformException catch(e){
             openPermisionPopupBox('Calender ${e.message}','Enable calender service for application form setting');
             //AppUtils.showInSnackBar(_scaffoldKey,e.toString());
-          }
+          }*/
       } else {
         openPermisionPopupBox('Calender Access Denie','Enable calender service for application form setting');
       }
@@ -889,19 +1039,12 @@ class _HomeState extends State<Home> {
                     List<AssessmentTasks> arrAssessmentTask = list.map((model) => AssessmentTasks.fromJSON(model)).toList();
                     if(arrAssessmentTask.length > 0){
 
-                        arrAssessmentTask.forEach((task) async {
-                          var res = await DBManager.db.checkAssessementsTaskExists(task,this.assessmentSelected.ASSESSMENT_UUID,this.assessmentSelected.ASSESSOR_UUID);
-                            if (res.isEmpty){
-                              await DBManager.db.insertAssessmetnsTask(task);
-                            } else {
-
-                            }
-                        });
-                       
-                        this.assessmentSelected.IS_ADD_CONTACT = 1;
+                        await addAssessmentTaskToDb(arrAssessmentTask);
+                        this.assessmentSelected.IS_DOWNLOADED = 1;
                         var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
                         if (res.isNotEmpty){
                           await DBManager.db.updateAssessmetns(this.assessmentSelected);
+                          await updateCandidateList();
                         } 
                     } 
                   }
@@ -932,6 +1075,15 @@ class _HomeState extends State<Home> {
       }
   }
 
+    Future addAssessmentTaskToDb(List<AssessmentTasks>  arrAssessmentTask) async {
+      arrAssessmentTask.forEach((task) async {
+        var res = await DBManager.db.checkAssessementsTaskExists(task,this.assessmentSelected.ASSESSMENT_UUID,this.assessmentSelected.ASSESSOR_UUID);
+          if (res.isEmpty){
+            await DBManager.db.insertAssessmetnsTask(task,this.assessmentSelected.ASSESSMENT_UUID,this.assessmentSelected.ASSESSOR_UUID);
+          } 
+      });
+    }
+
     void _startAssessment() async {
 
       if (this.assessmentSelected.IS_DOWNLOADED == 1){
@@ -941,7 +1093,22 @@ class _HomeState extends State<Home> {
           });
 
           if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
-            if(await AppUtils.isNetwrokAvailabe(context) == true){
+            AssessmentMetaData resMetadata = await DBManager.db.getAssessementsMetaData(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
+            List<AssessmentTasks> list = await DBManager.db.getAllAssessementsTasks(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
+
+            list.forEach((task){
+                print('task >> $task');
+                print('task questions >>${task.prompt}');
+            });
+
+            setState((){
+                _isLoading = false;
+                _isStartAssessmentTapped = false;
+              });
+              if(list != null && list.length > 0){
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(resMetadata: resMetadata,resAssessmentTask: list,)));
+              }
+            /*if(await AppUtils.isNetwrokAvailabe(context) == true){
               
               AppUtils.onShowLoder();
               Map body = {
@@ -983,7 +1150,7 @@ class _HomeState extends State<Home> {
                 if(_isError == true){
                   AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
                 }
-            }
+            }*/
 
           } else {
             setState((){

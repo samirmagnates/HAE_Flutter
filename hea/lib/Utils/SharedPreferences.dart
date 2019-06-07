@@ -10,7 +10,8 @@ class SharedPreferencesManager{
   static void setValue(String value , String key) async{
     if(value != null && key != null){
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString(key, value);
+      var res = await prefs.setString(key, value);
+      print("res setValue >> $res");
     }
     
   }
@@ -19,6 +20,7 @@ class SharedPreferencesManager{
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var value  =  await prefs.get(key);
       if(value != null){
+        print("res setValue >> ${json.decode(value)}");
         return json.decode(value);
       } 
       return '';
