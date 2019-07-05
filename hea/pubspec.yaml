@@ -31,7 +31,7 @@ dependencies:
   contacts_service: ^0.2.6
   add_2_calendar: ^1.2.2
   device_calendar: ^0.1.2+2
-  permission_handler: '^3.0.0'
+  permission_handler: '^3.1.0'
   cached_network_image: ^0.8.0
   audioplayer: ^0.5.2
   chewie: ^0.9.7
@@ -43,6 +43,10 @@ dependencies:
   camera: ^0.5.2+1
   path: ^1.6.2
   image_picker: ^0.6.0+9
+  flutter_sound: ^1.4.2
+  image: ^2.1.4
+  flutter_video_compress: ^0.3.7+8
+
 
 
 
@@ -70,6 +74,9 @@ flutter:
     - assets/images/Play.png
     - assets/images/Stop.png
     - assets/images/camera.png
+    - assets/images/Audio_record.png
+    - assets/images/rerecord.png
+    
     
     
   fonts:

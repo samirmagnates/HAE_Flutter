@@ -9,6 +9,7 @@ class AssessmentMetaData {
   String assessmentPassmark;
   String assessmentObtainmark;
   String assessmentResult;
+  String assessmentComment;
 
 
 
@@ -22,7 +23,8 @@ class AssessmentMetaData {
       this.assessmentIntroduction,
       this.assessmentPassmark,
       this.assessmentObtainmark,
-      this.assessmentResult});
+      this.assessmentResult,
+      this.assessmentComment});
 
   AssessmentMetaData.fromJSON(Map<String, dynamic> json) {
     assessorUuid = json['assessor_uuid'];
@@ -35,6 +37,7 @@ class AssessmentMetaData {
     assessmentPassmark = json['assessment_passmark'];
     assessmentObtainmark = json['assessment_obtainmark'] != null ? json['assessment_obtainmark']:'';
     assessmentResult = json['assessment_result'] != null ? json['assessment_result']:'';
+    assessmentComment = json['assessment_comment'] != null ? json['assessment_commnet']:'';
   }
 
   Map<String, dynamic> toJson() {
@@ -49,6 +52,7 @@ class AssessmentMetaData {
     data['assessment_passmark'] = this.assessmentPassmark;
     data['assessment_obtainmark'] = this.assessmentObtainmark;
     data['assessment_result'] = this.assessmentResult;
+    data['assessment_comment'] = this.assessmentComment;
     return data;
   }
 }

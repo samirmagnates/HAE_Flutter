@@ -6,10 +6,13 @@ import 'package:video_player/video_player.dart';
 import 'package:hea/Utils/AppUtils.dart';
 import 'package:auto_orientation/auto_orientation.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
+
 
 class customVideoPlayer extends StatefulWidget {
-  customVideoPlayer({Key key,@required this.url }): super(key:key);
+  customVideoPlayer({Key key,@required this.url, @required this.isLocal}): super(key:key);
   String url;
+  bool isLocal;
   @override
   _customVideoPlayerState createState() => _customVideoPlayerState();
 }
@@ -24,13 +27,23 @@ class _customVideoPlayerState extends State<customVideoPlayer> {
   @override
   void initState() {
     super.initState();
-    _videoPlayerController1 = VideoPlayerController.network(
+    getLocalVideo();
+  }
+
+  getLocalVideo() async {
+    if(widget.isLocal == false){
+      _videoPlayerController1 = VideoPlayerController.network(
         widget.url);
+    } else {
+      String docDirectory =  await AppUtils.getDocumentPath();
+      final file = new File('$docDirectory/${widget.url}');
+      _videoPlayerController1 = VideoPlayerController.file(file);
+    }
     _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController1,
         aspectRatio: 3 / 2,
-        autoPlay: true,
-        looping: true,
+        autoPlay: false,
+        looping: false,
         showControls: true,
          materialProgressColors: ChewieProgressColors(
            playedColor: ThemeColor.theme_blue,
@@ -39,9 +52,9 @@ class _customVideoPlayerState extends State<customVideoPlayer> {
            bufferedColor: Colors.lightGreen,
          ),
          placeholder: Container(
-           color: Colors.grey,
+           color: Colors.white,
          ),
-         //autoInitialize: true,
+         autoInitialize: true,
         routePageBuilder: (BuildContext context, Animation<double> animation,
             Animation<double> secondAnimation, provider) {
           return AnimatedBuilder(
@@ -61,15 +74,15 @@ class _customVideoPlayerState extends State<customVideoPlayer> {
           );
         }
         // Try playing around with some of these other options:
-
-
         );
   }
+  
+  
 
   @override
   void dispose() {
-    _videoPlayerController1.dispose();
-    _chewieController.dispose();
+    //_videoPlayerController1.dispose();
+    //_chewieController.dispose();
     super.dispose();
   }
 
@@ -80,9 +93,15 @@ class _customVideoPlayerState extends State<customVideoPlayer> {
           children: <Widget>[
             Expanded(
               child: Center(
-                child: Chewie(
+                child: _chewieController != null?Chewie(
                   controller: _chewieController,
-                ),
+                ):Container(
+                    height: MediaQuery.of(context).size.height,
+                    width: MediaQuery.of(context).size.width,
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
               ),
             ),
             /*FlatButton(

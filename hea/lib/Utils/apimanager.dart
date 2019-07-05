@@ -10,12 +10,14 @@ class APIManager {
 
   static const String baseURL = "https://ath.hae.org.uk/services/"; 
 
-  Future httpRequest(String urltype, String method, context,Map body) async{
+  Future httpRequest(String urltype, String method,Map body) async{
 
     String url = baseURL+urltype+'/';
+    dynamic requestBody; 
     
     Map<String, String> requestHeaders = {
        //'Accept': 'application/json',
+       //"content-type": "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW",
      };
     
     if(urltype == APIType.public){
@@ -24,12 +26,25 @@ class APIManager {
       String userToken = await AppUtils.getAppUserToken();
       requestHeaders[AppKey.header_Authorization] = userToken;
     }
-    url = url+method+'/';
+    if(method == APIMathods.setManifest){
+      requestBody = body[AppKey.param_rawJson];
+      url = url+'manifest/set/';
+    } else if(method == APIMathods.getManifest){
+      requestBody = body;
+      url = url+'manifest/get/';
+    } else if(method == APIMathods.uploadManifest){
+      requestBody = body[AppKey.param_rawJson];
+      url = url+'manifest/upload/';
+    } else {
+      url = url+method+'/';
+      requestBody = body;
+    }
+    
     var jsonData;
     try{
-        var response = await http.post(url,body: body,headers: requestHeaders);
+        var response = await http.post(url,body: requestBody,headers: requestHeaders);
         AppUtils.onPrintLog("response >>> ${response.body}");
-        var data = json.encode(response.body);
+        //var data = json.encode(response.body);
         try {
           jsonData = json.decode(response.body);
         } on FormatException catch (e) {
@@ -38,8 +53,10 @@ class APIManager {
           print('That string was null! >>> $e');
         }
     } on TimeoutException catch (e){
+      print("TimeoutException. >>> $e");
 
     } on SocketException catch(e){
+      print("SocketException. >>> $e");
 
     }
     return jsonData;
@@ -73,4 +90,7 @@ class APIMathods {
   static const String uploadAssessment = "uploadAssessment";
   static const String getAssessments = "getAssessments";
   static const String downloadAssessment = "downloadAssessment";
+  static const String setManifest = "setManifest";
+  static const String getManifest = "getManifest";
+  static const String uploadManifest = "uploadManifest";
 }

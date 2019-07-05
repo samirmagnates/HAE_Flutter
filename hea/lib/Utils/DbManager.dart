@@ -8,7 +8,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:hea/Model/AssessmentTasks.dart';
 import 'package:hea/Model/AssessmentMetaData.dart';
 import 'package:hea/Model/QuestionOptions.dart';
-import 'package:hea/Model/Candidate.dart';
+import 'package:hea/Model/Assessment.dart';
 
 
 class DBManager{
@@ -97,52 +97,54 @@ class DBManager{
           "${AppDatabase.tbl_assessment_meta_field_assessment_introduction} TEXT,"
           "${AppDatabase.tbl_assessment_meta_field_assessment_passmark} TEXT,"
           "${AppDatabase.tbl_assessment_meta_field_assessment_obtainmark} TEXT,"
-          "${AppDatabase.tbl_assessment_meta_field_assessment_result} TEXT"
+          "${AppDatabase.tbl_assessment_meta_field_assessment_result} TEXT,"
+          "${AppDatabase.tbl_assessment_meta_field_assessment_comment} TEXT"
         ")");
     }
 
-    performAssessmetnsAction(Candidate canididate) async {
+    performAssessmetnsAction(Assessment assessment) async {
 
-      var res = await checkAssessementsExists(canididate);
+      var res = await checkAssessementsExists(assessment);
       if (res.isNotEmpty){
-         return await updateAssessmetns(canididate);
+         return await updateAssessmetns(assessment);
       } else {
-          return await insertAssessmetns(canididate);
+          return await insertAssessmetns(assessment);
       }
     }
 
-    checkAssessementsExists(Candidate canididate) async {
+    checkAssessementsExists(Assessment assessment) async {
       final db = await database;
-      var res = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_assessments} WHERE ${AppDatabase.tbl_assessments_field_assessment_uuid}="${canididate.ASSESSMENT_UUID}"');
+      var res = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_assessments} WHERE ${AppDatabase.tbl_assessments_field_assessment_uuid}="${assessment.ASSESSMENT_UUID}"');
       return res;
 
     }
 
-    insertAssessmetns(Candidate canididate) async {
-        String assessment_uuid = canididate.ASSESSMENT_UUID != null ? canididate.ASSESSMENT_UUID:'';
-        String assessment_appointment = canididate.ASSESSMENT_APPOINTMENT != null ? canididate.ASSESSMENT_APPOINTMENT:'';
-        String assessment_assessor_first = canididate.ASSESSMENT_ASSESSOR_FIRST != null ? canididate.ASSESSMENT_ASSESSOR_FIRST:'';
-        String assessment_assessor_last = canididate.ASSESSMENT_ASSESSOR_LAST != null ? canididate.ASSESSMENT_ASSESSOR_LAST:'';
-        String assessment_candidate_first = canididate.ASSESSMENT_CANDIDATE_FIRST != null ? canididate.ASSESSMENT_CANDIDATE_FIRST:'';
-        String assessment_candidate_last = canididate.ASSESSMENT_CANDIDATE_LAST != null ? canididate.ASSESSMENT_CANDIDATE_LAST:'';
-        String assessment_candidate_email = canididate.ASSESSMENT_CANDIDATE_EMAIL != null ? canididate.ASSESSMENT_CANDIDATE_EMAIL:'';
-        String assessment_candidate_number = canididate.ASSESSMENT_CANDIDATE_NUMBER != null ? canididate.ASSESSMENT_CANDIDATE_NUMBER:'';
-        String assessment_address_company = canididate.ASSESSMENT_ADDRESS_COMPANY != null ? canididate.ASSESSMENT_ADDRESS_COMPANY:'';
-        String assessment_address_address1 = canididate.ASSESSMENT_ADDRESS_ADDRESS1 != null ? canididate.ASSESSMENT_ADDRESS_ADDRESS1:'';
-        String assessment_address_address2 = canididate.ASSESSMENT_ADDRESS_ADDRESS2 != null ? canididate.ASSESSMENT_ADDRESS_ADDRESS2:'';
-        String assessment_address_towncity = canididate.ASSESSMENT_ADDRESS_TOWNCITY != null ? canididate.ASSESSMENT_ADDRESS_TOWNCITY:'';
-        String assessment_address_county = canididate.ASSESSMENT_ADDRESS_COUNTY != null ? canididate.ASSESSMENT_ADDRESS_COUNTY:'';
-        String assessment_address_postcode = canididate.ASSESSMENT_ADDRESS_POSTCODE != null ? canididate.ASSESSMENT_ADDRESS_POSTCODE:'';
-        String assessment_address_country = canididate.ASSESSMENT_ADDRESS_COUNTRY != null ? canididate.ASSESSMENT_ADDRESS_COUNTRY:'';
-        String assessment_title = canididate.ASSESSMENT_TITLE != null ? canididate.ASSESSMENT_TITLE:'';
-        String assessor_uuid = canididate.ASSESSOR_UUID != null ? canididate.ASSESSOR_UUID:'';
-        int assessment_id = canididate.ASSESSMENT_ID != null ? canididate.ASSESSMENT_ID:0;
-        int is_add_contact = canididate.IS_ADD_CONTACT != null ? canididate.IS_ADD_CONTACT:0;
-        String contact_id = canididate.CONTACT_ID != null ? canididate.CONTACT_ID:'';
-        int is_add_calender = canididate.IS_ADD_CALENDER != null ? canididate.IS_ADD_CALENDER:0;
-        String calender_id = canididate.CALENDER_ID != null ? canididate.CALENDER_ID:'';
-        int is_downloaded = canididate.IS_DOWNLOADED != null ? canididate.IS_DOWNLOADED:0;
-        int is_end = canididate.IS_END != null ? canididate.IS_END:0;
+    insertAssessmetns(Assessment assessment) async {
+        String assessment_uuid = assessment.ASSESSMENT_UUID != null ? assessment.ASSESSMENT_UUID:'';
+        String assessment_appointment = assessment.ASSESSMENT_APPOINTMENT != null ? assessment.ASSESSMENT_APPOINTMENT:'';
+        String assessment_assessor_first = assessment.ASSESSMENT_ASSESSOR_FIRST != null ? assessment.ASSESSMENT_ASSESSOR_FIRST:'';
+        String assessment_assessor_last = assessment.ASSESSMENT_ASSESSOR_LAST != null ? assessment.ASSESSMENT_ASSESSOR_LAST:'';
+        String assessment_candidate_first = assessment.ASSESSMENT_CANDIDATE_FIRST != null ? assessment.ASSESSMENT_CANDIDATE_FIRST:'';
+        String assessment_candidate_last = assessment.ASSESSMENT_CANDIDATE_LAST != null ? assessment.ASSESSMENT_CANDIDATE_LAST:'';
+        String assessment_candidate_email = assessment.ASSESSMENT_CANDIDATE_EMAIL != null ? assessment.ASSESSMENT_CANDIDATE_EMAIL:'';
+        String assessment_candidate_number = assessment.ASSESSMENT_CANDIDATE_NUMBER != null ? assessment.ASSESSMENT_CANDIDATE_NUMBER:'';
+        String assessment_address_company = assessment.ASSESSMENT_ADDRESS_COMPANY != null ? assessment.ASSESSMENT_ADDRESS_COMPANY:'';
+        String assessment_address_address1 = assessment.ASSESSMENT_ADDRESS_ADDRESS1 != null ? assessment.ASSESSMENT_ADDRESS_ADDRESS1:'';
+        String assessment_address_address2 = assessment.ASSESSMENT_ADDRESS_ADDRESS2 != null ? assessment.ASSESSMENT_ADDRESS_ADDRESS2:'';
+        String assessment_address_towncity = assessment.ASSESSMENT_ADDRESS_TOWNCITY != null ? assessment.ASSESSMENT_ADDRESS_TOWNCITY:'';
+        String assessment_address_county = assessment.ASSESSMENT_ADDRESS_COUNTY != null ? assessment.ASSESSMENT_ADDRESS_COUNTY:'';
+        String assessment_address_postcode = assessment.ASSESSMENT_ADDRESS_POSTCODE != null ? assessment.ASSESSMENT_ADDRESS_POSTCODE:'';
+        String assessment_address_country = assessment.ASSESSMENT_ADDRESS_COUNTRY != null ? assessment.ASSESSMENT_ADDRESS_COUNTRY:'';
+        String assessment_title = assessment.ASSESSMENT_TITLE != null ? assessment.ASSESSMENT_TITLE:'';
+        String assessor_uuid = assessment.ASSESSOR_UUID != null ? assessment.ASSESSOR_UUID:'';
+        int assessment_id = assessment.ASSESSMENT_ID != null ? assessment.ASSESSMENT_ID:0;
+        int is_add_contact = assessment.IS_ADD_CONTACT != null ? assessment.IS_ADD_CONTACT:0;
+        String contact_id = assessment.CONTACT_ID != null ? assessment.CONTACT_ID:'';
+        int is_add_calender = assessment.IS_ADD_CALENDER != null ? assessment.IS_ADD_CALENDER:0;
+        String calender_id = assessment.CALENDER_ID != null ? assessment.CALENDER_ID:'';
+        int is_downloaded = assessment.IS_DOWNLOADED != null ? assessment.IS_DOWNLOADED:0;
+        int is_end = assessment.IS_END != null ? assessment.IS_END:0;
+        
 
         final db = await database;
         var res = await db.rawInsert(
@@ -150,10 +152,9 @@ class DBManager{
           " VALUES ('$assessment_uuid','$assessment_appointment','$assessment_assessor_first','$assessment_assessor_last','$assessment_candidate_first','$assessment_candidate_last','$assessment_candidate_email','$assessment_candidate_number','$assessment_address_company','$assessment_address_address1','$assessment_address_address2','$assessment_address_towncity','$assessment_address_county','$assessment_address_postcode','$assessment_address_country','$assessment_title','$assessor_uuid',$assessment_id,$is_add_contact,'$contact_id',$is_add_calender,'$calender_id',$is_downloaded,$is_end)");
         return res;
     }
-
-    updateAssessmetns(Candidate canididate) async {
+    updateAssessmetns(Assessment assessment) async {
         final db = await database;
-        var res = await db.update('${AppDatabase.tbl_name_assessments}', canididate.toJson(),where: "${AppDatabase.tbl_assessments_field_assessment_uuid} = ?", whereArgs: [canididate.ASSESSMENT_UUID]);
+        var res = await db.update('${AppDatabase.tbl_name_assessments}', assessment.toJson(),where: "${AppDatabase.tbl_assessments_field_assessment_uuid} = ?", whereArgs: [assessment.ASSESSMENT_UUID]);
         return res;
     }
     
@@ -161,15 +162,14 @@ class DBManager{
       final db = await database;
       List<Map> list = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_assessments} WHERE ${AppDatabase.tbl_assessments_field_assessment_uuid} = ? AND ${AppDatabase.tbl_assessments_field_assessor_uuid} = ?',['$assessment_uuid','$assessor_uuid']);
       print('list >> $list');
-      return list.isNotEmpty ? Candidate.fromJSON(list.first) : null;
-      
+      return list.isNotEmpty ? Assessment.fromJSON(list.first) : null;
     }
     
     getAllAssessements(String assessor_uuid) async {
       final db = await database;
       var res = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_assessments} WHERE ${AppDatabase.tbl_assessments_field_assessor_uuid}="$assessor_uuid"');
-      List<Candidate> list =
-          res.isNotEmpty ? res.map((c) => Candidate.fromJSON(c)).toList() : [];
+      List<Assessment> list =
+          res.isNotEmpty ? res.map((c) => Assessment.fromJSON(c)).toList() : [];
       return list;
     }
 
@@ -177,12 +177,10 @@ class DBManager{
       final db = await database;
       var res = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_assessment_meta} WHERE ${AppDatabase.tbl_assessment_meta_field_assessment_uuid}="${metadata.assessmentUuid}"');
       return res;
-
     }
 
 
     insertAssessmetnsMetaData(AssessmentMetaData metadata) async {
-
         String assessor_uuid = metadata.assessorUuid != null ? metadata.assessorUuid:'';
         String assessor_name = metadata.assessorName != null ? metadata.assessorName:'';
         String candidate_uuid = metadata.candidateUuid != null ? metadata.candidateUuid:'';
@@ -193,11 +191,14 @@ class DBManager{
         String assessment_passmark = metadata.assessmentPassmark != null ? metadata.assessmentPassmark:'';
         String assessmentObtainmark = metadata.assessmentObtainmark != null ? metadata.assessmentObtainmark:'';
         String assessmentResult = metadata.assessmentResult != null ? metadata.assessmentResult:'';
+        String assessmentComment = metadata.assessmentComment != null ? metadata.assessmentComment:'';
+
+        
         
         final db = await database;
         var res = await db.rawInsert(
-          "INSERT INTO ${AppDatabase.tbl_name_assessment_meta} (${AppDatabase.tbl_assessment_meta_field_assessor_uuid},${AppDatabase.tbl_assessment_meta_field_assessor_name},${AppDatabase.tbl_assessment_meta_field_candidate_uuid},${AppDatabase.tbl_assessment_meta_field_candidate_name},${AppDatabase.tbl_assessment_meta_field_assessment_uuid},${AppDatabase.tbl_assessment_meta_field_assessment_name},${AppDatabase.tbl_assessment_meta_field_assessment_introduction},${AppDatabase.tbl_assessment_meta_field_assessment_passmark},${AppDatabase.tbl_assessment_meta_field_assessment_obtainmark},${AppDatabase.tbl_assessment_meta_field_assessment_result})"
-          " VALUES ('$assessor_uuid','$assessor_name','$candidate_uuid','$candidate_name','$assessment_uuid','$assessment_name','$assessment_introduction','$assessment_passmark','$assessmentObtainmark','$assessmentResult')");
+          "INSERT INTO ${AppDatabase.tbl_name_assessment_meta} (${AppDatabase.tbl_assessment_meta_field_assessor_uuid},${AppDatabase.tbl_assessment_meta_field_assessor_name},${AppDatabase.tbl_assessment_meta_field_candidate_uuid},${AppDatabase.tbl_assessment_meta_field_candidate_name},${AppDatabase.tbl_assessment_meta_field_assessment_uuid},${AppDatabase.tbl_assessment_meta_field_assessment_name},${AppDatabase.tbl_assessment_meta_field_assessment_introduction},${AppDatabase.tbl_assessment_meta_field_assessment_passmark},${AppDatabase.tbl_assessment_meta_field_assessment_obtainmark},${AppDatabase.tbl_assessment_meta_field_assessment_result},${AppDatabase.tbl_assessment_meta_field_assessment_comment})"
+          " VALUES ('$assessor_uuid','$assessor_name','$candidate_uuid','$candidate_name','$assessment_uuid','$assessment_name','$assessment_introduction','$assessment_passmark','$assessmentObtainmark','$assessmentResult','$assessmentComment')");
         return res;
     }
 
@@ -228,13 +229,10 @@ class DBManager{
       final db = await database;
       var res = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_tasks} WHERE ${AppDatabase.tbl_tasks_field_assessment_task_uuid}="${task.assessmentTaskUuid}"');
       return res;
-
     }
 
 
     insertAssessmetnsTask(AssessmentTasks task, String assessmentuuid, String assessoruuid) async {
-
-
         String assessmentTaskUuid = task.assessmentTaskUuid;
         String assessmentTaskType = task.assessmentTaskType;
         String assessmentTaskCorrectResponseId = task.assessmentTaskCorrectResponseId;
@@ -242,8 +240,8 @@ class DBManager{
         String assessmentTaskCorrectResponseText = task.assessmentTaskCorrectResponseText;
         String assessmentTaskAnswerResponseText = task.assessmentTaskAnswerResponseText;
         String assessmentTaskAssetUrl = task.assessmentTaskAssetUrl;
-        String score = task.score;
-        String prompt = task.prompt;
+        String score = task.score;  
+        String prompt = task.prompt;  
         String result = task.result;
         String responses  = task.responses;
         //List<QuestionOptions> answers;
@@ -271,11 +269,11 @@ class DBManager{
         return res;
     }
     
-    getAssessementsMetaTask(String task_uuid,String assessment_uuid,String assessor_uuid) async {
+    getAssessementsTask(String task_uuid,String assessment_uuid,String assessor_uuid) async {
       final db = await database;
       List<Map> list = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_tasks} WHERE ${AppDatabase.tbl_tasks_field_assessment_task_uuid} = ? AND ${AppDatabase.tbl_tasks_field_assessment_uuid} = ? AND ${AppDatabase.tbl_tasks_field_assessor_uuid} = ?',['$task_uuid','$assessment_uuid','$assessor_uuid']);
       print('list >> $list');
-      return list.isNotEmpty ? AssessmentMetaData.fromJSON(list.first) : null;
+      return list.isNotEmpty ? AssessmentTasks.fromJSON(list.first) : null;
       
     }
     

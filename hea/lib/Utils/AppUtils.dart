@@ -76,23 +76,31 @@ class AppUtils{
         }
     }
 
-    static Future<String> getLocalPath(String folderName) async{
+    static Future<String> getDocumentPath() async{
       final Directory appDirectory = await getApplicationDocumentsDirectory();
-      final String directory = '${appDirectory.path}/Document/$folderName';
-      /*final directory = new Directory(folderDirectory);
-      directory.exists().then((isThere){
-        if(isThere == false){
+      return appDirectory.path;
+    }
 
-        }
-      });*/
+    static Future<String> getAssessmentPath(String assessmentUDID) async{
+      
+      return 'Document/$assessmentUDID';
+    }
 
+    
+
+    static Future<String> getCreateFolder(String path) async{
+      final String appDirectory = await getDocumentPath();
+
+      print('appDirectory >> $appDirectory');
+      //final String folderPath  = await getTaskPath(folderName);
+      final String directory = '$appDirectory/$path';
       await Directory(directory).create(recursive: true);
       return directory;
     }
 
     static Future<void> deleteLocalFolder(String folderName) async{
-      final Directory appDirectory = await getApplicationDocumentsDirectory();
-      final String directory = '${appDirectory.path}/Document/$folderName';
+      final String appDirectory = await getDocumentPath();
+      final String directory = '$appDirectory/Document/$folderName';
       /*final directory = new Directory(folderDirectory);
       directory.exists().then((isThere){
         if(isThere == false){
@@ -107,8 +115,6 @@ class AppUtils{
       } catch (e){
          print('res >>> ${e.toString()}');
       }
-      
-     
     }
 
     
@@ -166,7 +172,10 @@ class ThemeImage{
     static const image_play = "assets/images/Play.png";
     static const image_stop = "assets/images/Stop.png";
     static const image_camera = "assets/images/camera.png";
+    static const image_mic = "assets/images/Audio_record.png";
+    static const image_rerecord = "assets/images/rerecord.png";
     
+
 }
 
 class ThemeFont{
@@ -208,11 +217,13 @@ class AppConstant{
     static const String kTitle_ForgotPass = 'Forgot Password?';
     static const String kTitle_Send = 'Send';
     static const String kTitle_StartAssessment = 'Start Assessment';
+    static const String kTitle_UploadAssessment = 'Upload Assessment';
     static const String kTitle_EndAssessment = 'End Assessment';
     static const String kTitle_Check = 'Check';
     static const String kTitle_Next = 'Next';
     static const String kTitle_Pass = 'Pass';
     static const String kTitle_Fail = 'Fail';
+    static const String kTitle_Pending = 'Pending';
     static const String kTitle_Assessment = 'Assessment';
     static const String kTitle_Assessment_Details = 'Assessment Details';
     static const String kTitle_AddToDevice = 'Add To Device';
@@ -239,6 +250,7 @@ class AppKey {
   static const String param_assessment_uuid = 'assessment_uuid';
   static const String key_isContactAdd = 'isContactAdd';
   static const String key_isCalenterEventAdd = 'isCalenterEventAdd';
+  static const String param_rawJson = 'rawJson';
   
 }
 
@@ -249,6 +261,13 @@ class ApiResponsKey {
   static const String error = 'error';
   static const String code = 'code';
   static const String message = 'message';
+}
+
+class Permission {
+  Permission._();
+  static const String camera  = 'camera';
+  static const String microphone = 'microphone';
+  
 }
 
 class AppDatabase{
@@ -285,6 +304,7 @@ class AppDatabase{
   static final String tbl_assessments_field_assessment_calender_id = 'calender_id';
   static final String tbl_assessments_field_assessment_is_downloaded = 'is_downloaded';
   static final String tbl_assessments_field_assessment_is_end = 'is_end';
+  
 
   static final String tbl_tasks_field_assessment_task_uuid = 'assessment_task_uuid';
   static final String tbl_tasks_field_assessment_task_type = 'assessment_task_type';
@@ -312,6 +332,7 @@ class AppDatabase{
   static final String tbl_assessment_meta_field_assessment_passmark = 'assessment_passmark';
   static final String tbl_assessment_meta_field_assessment_obtainmark = 'assessment_obtainmark';
   static final String tbl_assessment_meta_field_assessment_result = 'assessment_result';
+  static final String tbl_assessment_meta_field_assessment_comment = 'assessment_comment';
 
         
 

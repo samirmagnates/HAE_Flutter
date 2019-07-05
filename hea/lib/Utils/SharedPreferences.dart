@@ -20,7 +20,7 @@ class SharedPreferencesManager{
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var value  =  await prefs.get(key);
       if(value != null){
-        print("res setValue >> ${json.decode(value)}");
+        print("res getObject >> ${json.decode(value)}");
         return json.decode(value);
       } 
       return '';

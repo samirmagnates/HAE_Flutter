@@ -107,7 +107,7 @@ class _LoginState extends State<Login> {
           AppKey.param_password:password
         };
 
-        var response =  await APIManager().httpRequest(APIType.public,APIMathods.login,context,body) as Map;
+        var response =  await APIManager().httpRequest(APIType.public,APIMathods.login,body) as Map;
         var data;
         if(response != null){
             AppUtils.onPrintLog("response >> $response");
@@ -181,7 +181,7 @@ class _LoginState extends State<Login> {
          Map body = {
           AppKey.param_username:username,
         };
-        var response =  await APIManager().httpRequest(APIType.public,APIMathods.resetPassword,context,body) as Map;
+        var response =  await APIManager().httpRequest(APIType.public,APIMathods.resetPassword,body) as Map;
         var data;
         if(response != null){
            AppUtils.onPrintLog("response >> $response");

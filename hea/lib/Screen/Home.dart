@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:hea/Utils/AppUtils.dart';
-import 'package:hea/Model/Candidate.dart';
+import 'package:hea/Model/Assessment.dart';
 import 'package:hea/Utils/apimanager.dart';
 import 'package:hea/Utils/DbManager.dart';
 import 'package:contacts_service/contacts_service.dart';
@@ -12,7 +12,9 @@ import 'package:hea/Screen/StartAssessment.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:hea/Model/AssessmentTasks.dart';
 import 'package:hea/Model/AssessmentMetaData.dart';
-import 'package:hea/Model/QuestionOptions.dart';
+import 'dart:io';
+import 'dart:convert';
+import 'package:path/path.dart' as path;
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
@@ -23,7 +25,7 @@ class _HomeState extends State<Home> {
   DeviceCalendarPlugin _deviceCalendarPlugin;
   static final GlobalKey<ScaffoldState> _scaffoldKeyHome = new GlobalKey<ScaffoldState>();
   
-  Candidate assessmentSelected;
+  Assessment assessmentSelected;
   bool _isLoading = true;
   bool _isError = false;
   bool _isAddToDeviceTapped = false;
@@ -31,11 +33,13 @@ class _HomeState extends State<Home> {
   bool _isStartAssessmentTapped = false;
   bool _isDeleteTap = false;
 
+  int needTouploadFileCount = 0;
+  int uploadFileCount = 0;
 
   String noDataMessage = '';
 
   var errorMessage = AppMessage.kError_SomethingWentWrong;
-  List<Candidate> arrCadidates;
+  List<Assessment> arrAssessments;
   String appUserToken;
 
   @override
@@ -43,13 +47,12 @@ class _HomeState extends State<Home> {
     // TODO: implement initState
     super.initState();
     _deviceCalendarPlugin = new DeviceCalendarPlugin();
-    getBasicRequireParameters();
     getAessessment();
   }
 
-  void getBasicRequireParameters() async {
+    getBasicRequireParameters() async {
       appUserToken = await AppUtils.getAppUserToken() ;
-      Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.calendar,PermissionGroup.contacts]);
+      await PermissionHandler().requestPermissions([PermissionGroup.calendar,PermissionGroup.contacts]);
   }
   
   @override
@@ -73,11 +76,14 @@ class _HomeState extends State<Home> {
           icon: Image.asset(ThemeImage.image_delete),
           //onPressed: () => _isDeleteTap?null:_performDeletAction(),
           onPressed: () async{
-            if(_isDeleteTap == false)  {
+            if(_isLoading == false){
+              if(_isDeleteTap == false)  {
               //await _performDeletAction();
                await DBManager.db.clearDataBase(this.assessmentSelected.ASSESSOR_UUID);
                 Navigator.of(context).pop();
+              } 
             } 
+            
           },
           )
         ],
@@ -85,7 +91,10 @@ class _HomeState extends State<Home> {
           padding: EdgeInsets.all(12.0),
           icon: Image.asset(ThemeImage.image_logout),
           onPressed: (){
-            _showLogoutAlert(context);
+            if(_isLoading == false){
+              _showLogoutAlert(context);
+            }
+            
           },
         ),
       ),
@@ -101,10 +110,10 @@ class _HomeState extends State<Home> {
           color: this.assessmentSelected.IS_DOWNLOADED == 1?ThemeColor.theme_blue:Colors.grey
         ),
         child: FlatButton(
-          onPressed: () => _isStartAssessmentTapped?null:_startAssessment(),
+          onPressed: () => _isStartAssessmentTapped?null:this.assessmentSelected.IS_END == 1?_uploadAssessment():_startAssessment(),
           child: Center(
             child: Text(
-                AppConstant.kTitle_StartAssessment,
+                this.assessmentSelected.IS_END == 1?AppConstant.kTitle_UploadAssessment:AppConstant.kTitle_StartAssessment,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontFamily: ThemeFont.font_pourceSanPro,
@@ -128,8 +137,8 @@ class _HomeState extends State<Home> {
           _isDeleteTap = true;
     });
 
-    for (int i = 0; i < this.arrCadidates.length; i++){
-        Candidate can = this.arrCadidates[i];
+    for (int i = 0; i < this.arrAssessments.length; i++){
+        Assessment can = this.arrAssessments[i];
         if (can.IS_ADD_CONTACT == 1){
             Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.contacts]);
             PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.contacts];
@@ -232,7 +241,10 @@ class _HomeState extends State<Home> {
                               ),
                               child:FlatButton(
                                 onPressed: (){
-                                  _showCandidatePicker(context);
+                                  if(_isLoading == false){
+                                    _showCandidatePicker(context);
+                                  } 
+                                  
                                 },
                                 child: SizedBox(
                                   width: double.infinity,
@@ -446,9 +458,19 @@ class _HomeState extends State<Home> {
                                     color: ThemeColor.theme_blue,
                                   ),
                                   child: FlatButton(
-                                    onPressed: () => _isAddToDeviceTapped?null:({
-                                       _addToDevice()
-                                    }),
+                                    onPressed: (){
+                                      if(_isLoading == false){
+                                        if(_isAddToDeviceTapped == false){
+                                          _addToDevice();
+                                        }
+                                      }
+                                    },
+                                    /*onPressed: () => _isAddToDeviceTapped?null:({
+                                      if(_isLoading == false){
+                                        _addToDevice()
+                                      }
+                                       
+                                    }),*/
                                     child: Center(
                                       child: Text(
                                           AppConstant.kTitle_AddToDevice,
@@ -477,9 +499,18 @@ class _HomeState extends State<Home> {
                                     color: ThemeColor.theme_blue,
                                   ),
                                   child: FlatButton(
-                                    onPressed: () => _isDownloadTapped?null:({
-                                       _downloadAssessment()
-                                    }),
+                                    onPressed: (){
+                                      if(_isLoading == false){
+                                        if(_isDownloadTapped == false){
+                                          _downloadAssessment();
+                                        }
+                                      }
+                                    },
+                                    /*onPressed: () => _isDownloadTapped?null:({
+                                        if(_isLoading == false){
+                                        _downloadAssessment()
+                                        } 
+                                    }),*/
                                     child: Center(
                                       child: Text(
                                           AppConstant.kTitle_Download,
@@ -510,7 +541,8 @@ class _HomeState extends State<Home> {
   }
 
   void getAessessment() async {
-
+    getBasicRequireParameters();
+    
     var assessorUUID = await AppUtils.getAssessorUUID() as String;
 
     if (assessorUUID != null && assessorUUID != ''){
@@ -523,7 +555,7 @@ class _HomeState extends State<Home> {
           AppKey.param_assessor_uuid:assessorUUID
         };
 
-        var response =  await APIManager().httpRequest(APIType.private,APIMathods.getAssessments,context,body) as Map;
+        var response =  await APIManager().httpRequest(APIType.private,APIMathods.getAssessments,body) as Map;
         var data;
         if(response != null){
             AppUtils.onPrintLog("response >> $response");
@@ -532,9 +564,9 @@ class _HomeState extends State<Home> {
                 data = response[ApiResponsKey.data];
                 Iterable list = data;
                 //matchData = list.map((model) => Match.fromJson(model)).toList();
-                this.arrCadidates = list.map((model) => Candidate.fromJSON(model)).toList();
-                if(this.arrCadidates.length > 0){
-                    Candidate candidate = this.arrCadidates.first;
+                this.arrAssessments = list.map((model) => Assessment.fromJSON(model)).toList();
+                if(this.arrAssessments.length > 0){
+                    Assessment candidate = this.arrAssessments.first;
                     //await DBManager.db.performAssessmetnsAction(candidate);
 
                     var res = await DBManager.db.checkAssessementsExists(candidate);
@@ -543,7 +575,7 @@ class _HomeState extends State<Home> {
                     } 
                     var response =  await DBManager.db.getAssessements(candidate.ASSESSMENT_UUID,candidate.ASSESSOR_UUID);
                     setState(()  {
-                      this.assessmentSelected = response != null?response as Candidate:null;
+                      this.assessmentSelected = response != null?response as Assessment:null;
                       if(this.assessmentSelected != null){
                            updateCandidateList();
                       }
@@ -609,7 +641,7 @@ class _HomeState extends State<Home> {
           AppKey.param_appuser_token:appUserToken
         };
 
-        var response =  await APIManager().httpRequest(APIType.public,APIMathods.logout,context,body) as Map;
+        var response =  await APIManager().httpRequest(APIType.public,APIMathods.logout,body) as Map;
         var data;
         if(response != null){
             AppUtils.onPrintLog("response >> $response");
@@ -657,14 +689,20 @@ class _HomeState extends State<Home> {
               FlatButton(
                 child: new Text("Cancel"),
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  if(_isLoading == false){
+                    Navigator.of(context).pop();
+                  }
+                  
                 },
               ),
               FlatButton(
                 child: new Text("Logout"),
                 onPressed: () {
-                  Navigator.of(context).pop();
-                  logout();
+                  if(_isLoading == false){
+                    Navigator.of(context).pop();
+                    logout();
+                  }
+                  
                 },
               ),
             ],
@@ -674,13 +712,15 @@ class _HomeState extends State<Home> {
 
     void _showCandidatePicker(BuildContext context) async{
 
+      
+
        final result = await showDialog(
           context: context,
-          builder: (context) => SearchCandidateView(arrCadidates:this.arrCadidates)
+          builder: (context) => SearchCandidateView(arrAssessments:this.arrAssessments,currentAssessment:this.assessmentSelected)
       );
 
       if(result != null){
-          Candidate candidate = result as Candidate;
+          Assessment candidate = result as Assessment;
           //await DBManager.db.performAssessmetnsAction(candidate);
           var res = await DBManager.db.checkAssessementsExists(candidate);
           if (res.isEmpty){
@@ -688,7 +728,7 @@ class _HomeState extends State<Home> {
           } 
           var response =  await DBManager.db.getAssessements(candidate.ASSESSMENT_UUID,candidate.ASSESSOR_UUID);
           setState(() {
-            this.assessmentSelected = response != null?response as Candidate:null;
+            this.assessmentSelected = response != null?response as Assessment:null;
             if(this.assessmentSelected != null){
                updateCandidateList();
             }
@@ -779,7 +819,7 @@ class _HomeState extends State<Home> {
         }
     }
 
-    Future _deleteContact(Candidate candidate) async {
+    Future _deleteContact(Assessment candidate) async {
 
       try{
         //var contact = await ContactsService.getContacts(query: 'identifier:${candidate.CONTACT_ID}');
@@ -796,7 +836,7 @@ class _HomeState extends State<Home> {
 
     
 
-    Future _deleteCalenderEvent(Candidate candidate) async {
+    Future _deleteCalenderEvent(Assessment candidate) async {
 
       final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
       Calendar calendar = calendarsResult.data.first;
@@ -810,10 +850,10 @@ class _HomeState extends State<Home> {
     }
     updateCandidateList() async{
 
-      for (int i = 0; i < this.arrCadidates.length; i++){
-        Candidate can = this.arrCadidates[i];
+      for (int i = 0; i < this.arrAssessments.length; i++){
+        Assessment can = this.arrAssessments[i];
         if (can.ASSESSMENT_ID == this.assessmentSelected.ASSESSMENT_ID){
-            this.arrCadidates[i] = this.assessmentSelected;
+            this.arrAssessments[i] = this.assessmentSelected;
             break;
         }
       }
@@ -961,7 +1001,9 @@ class _HomeState extends State<Home> {
                         ),
                         child: FlatButton(
                           onPressed: ()  {
-                            Navigator.of(context).pop();
+                            if(_isLoading == false){
+                              Navigator.of(context).pop();
+                            }
                           },
                           child: Center(
                             child: Text(
@@ -998,7 +1040,7 @@ class _HomeState extends State<Home> {
                 AppKey.param_assessment_uuid:this.assessmentSelected.ASSESSMENT_UUID
               };
 
-              var response =  await APIManager().httpRequest(APIType.private,APIMathods.downloadAssessment,context,body) as Map;
+              var response =  await APIManager().httpRequest(APIType.private,APIMathods.downloadAssessment,body) as Map;
               var data;
               if(response != null){
                   AppUtils.onPrintLog("response >> $response");
@@ -1084,51 +1126,298 @@ class _HomeState extends State<Home> {
       });
     }
 
-    void _startAssessment() async {
+    setManifestFile(String assessmentUdid,List<AssessmentTasks> taskList) async {
 
-      if (this.assessmentSelected.IS_DOWNLOADED == 1){
-          setState((){
-              _isLoading = true;
-              _isStartAssessmentTapped = true;
-          });
+        Map<String,dynamic> data = Map<String,dynamic>();
 
+        Map<String,dynamic> assessment_meta = Map<String,dynamic>();
+        assessment_meta['assessment_uuid'] = assessmentUdid;
+        List<Map <String,dynamic>> assessment_files = List<Map <String,dynamic>>();
+
+        for( AssessmentTasks task in taskList){
+          //AssessmentTasks task = taskList[index];
+          if(task.assessmentTaskLocalFile.isNotEmpty) {
+            String docDirectory = await AppUtils.getDocumentPath();
+            String fileFullPath = '$docDirectory/${task.assessmentTaskLocalFile}';
+          
+            final File file =  File(fileFullPath);
+            String fileName = path.basename(file.path);
+            int fileSize = await getFileSize(fileFullPath);
+            print('File fileSize-->$fileSize');
+            
+            Map<String,dynamic> file_info = Map<String,dynamic>();
+            file_info['assessment_task_uuid'] = task.assessmentTaskUuid;
+            file_info['assessment_task_upload_filesize'] = '${fileSize.toString()}';
+            file_info['assessment_task_upload_filename'] = fileName;
+            assessment_files.add(file_info);
+          }
+          
+          
+        }
+        /*taskList.forEach((task) async {
+            if(task.assessmentTaskLocalFile.isNotEmpty) {
+                  File file =  File('${task.assessmentTaskLocalFile}');
+                  String fileName = path.basename(file.path);
+                  file.length().then((len) {
+                  String fileSize = len.toString();
+                  
+                  Map<String,dynamic> file_info = Map<String,dynamic>();
+                  file_info['assessment_task_uuid'] = task.assessmentTaskUuid;
+                  file_info['assessment_task_upload_filesize'] = fileSize;
+                  file_info['assessment_task_upload_filename'] = fileName;
+                  assessment_files.add(file_info);
+                  });
+            }
+        });*/
+        data['assessment_meta'] = assessment_meta;
+        data['assessment_files'] = assessment_files;
+        String json = jsonEncode(data);
+        AppUtils.onPrintLog("json >> $json");
+
+
+        if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
+          if(await AppUtils.isNetwrokAvailabe(context) == true){
+            
+            Map body = {
+              AppKey.param_rawJson:json
+            };
+
+            var response =  await APIManager().httpRequest(APIType.private,APIMathods.setManifest,body) as Map;
+            return response;
+            
+          } else {
+              _isError = true;
+              if(_isError == true){
+                AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
+              }
+            return null;
+          }
+
+        } else {
+          AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+          return null;
+        }
+        
+    }
+
+    getManifestFile(String assessmentUdid) async {
+        if(await AppUtils.isNetwrokAvailabe(context) == true){
+            Map body = {
+              AppKey.param_assessment_uuid:assessmentUdid
+            };
+
+            var response =  await APIManager().httpRequest(APIType.private,APIMathods.getManifest,body) as Map;
+            return response;
+            
+          } else {
+              _isError = true;
+              if(_isError == true){
+                AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
+              }
+            return null;
+          }
+        
+        
+    }
+
+    
+
+    uploadManifestFile(Map<String,dynamic>fileStatus) async{
+
+        String taskUdid = fileStatus['assessment_task_uuid'] as String;
+        if(taskUdid != null && taskUdid != '') {
+          Map<String,dynamic> data = Map<String,dynamic>();
+
+          Map<String,dynamic> assessmentMeta = Map<String,dynamic>();
+          assessmentMeta['assessment_uuid'] = this.assessmentSelected.ASSESSMENT_UUID;
+          assessmentMeta['assessment_task_uuid'] = taskUdid;
+
+          Map<String,dynamic> assessmentFile = Map<String,dynamic>();
+          AssessmentTasks task = await DBManager.db.getAssessementsTask(taskUdid,this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
+          if(task.assessmentTaskLocalFile.isNotEmpty) {
+              String docDirectory = await AppUtils.getDocumentPath();
+              String fileFullPath = '$docDirectory/${task.assessmentTaskLocalFile}';
+              final File file =  File(fileFullPath);
+              String fileName = path.basename(file.path);
+              print('File fileName-->$fileName');
+              int fileSize = await getFileSize(fileFullPath);
+              //print('File fileSize-->$fileSize');
+              //List<int> data = await file.readAsBytesSync();
+              //print(data);
+              String base64 = base64Encode(file.readAsBytesSync());
+              print('File base64-->$base64');
+              assessmentFile['assessment_file_content'] = base64;
+              
+          }
+          data['assessment_meta'] = assessmentMeta;
+          data['assessment_files'] = assessmentFile;
+          String json = jsonEncode(data);
+          AppUtils.onPrintLog("json >> $json");
           if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
+            if(await AppUtils.isNetwrokAvailabe(context) == true){
+              Map body = {
+                AppKey.param_rawJson:json
+              };
+               var response =  await APIManager().httpRequest(APIType.private,APIMathods.uploadManifest,body) as Map;
+              return response;
+            } else {
+                _isError = true;
+                if(_isError == true){
+                  AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
+                }
+              return null;
+            }
+
+          } else {
+            AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+            return null;
+          }
+        } else {
+          return null;
+        }
+    }
+
+    getFileSize(String path) async {
+      print('File path-->$path');
+      File file =  File('$path');
+      var isExist = await file.exists();
+      if (isExist) {
+        print('File exists------------------>_getLocalFile()');
+        return await file.length().then((onValue){
+        print('onValue -->$onValue');
+        return onValue;
+      });
+        //return 'exist';
+      } else {
+        print('file does not exist---------->_getLocalFile()');  
+        return '';
+      }
+    }
+
+    void _uploadAssessment() async {
+
+      if(_isLoading == false){
+          if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty ){
+          if(this.assessmentSelected.IS_END == 1){
+            
             AssessmentMetaData resMetadata = await DBManager.db.getAssessementsMetaData(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
             List<AssessmentTasks> list = await DBManager.db.getAllAssessementsTasks(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
 
-            list.forEach((task){
-                print('task >> $task');
-                print('task questions >>${task.prompt}');
-            });
-
+            AppUtils.showInSnackBar(_scaffoldKeyHome, 'Upload assessment is under devlopment');
             setState((){
-                _isLoading = false;
-                _isStartAssessmentTapped = false;
-              });
-              if(list != null && list.length > 0){
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(resMetadata: resMetadata,resAssessmentTask: list,)));
-              }
-            /*if(await AppUtils.isNetwrokAvailabe(context) == true){
-              
-              AppUtils.onShowLoder();
-              Map body = {
-                AppKey.param_assessment_uuid:this.assessmentSelected.ASSESSMENT_UUID
-              };
-
-              var response =  await APIManager().httpRequest(APIType.private,APIMathods.downloadAssessment,context,body) as Map;
-              var data;
-              if(response != null){
-                  AppUtils.onPrintLog("response >> $response");
-        
-                  if(response[ApiResponsKey.success] == true){
-                    if(response[ApiResponsKey.data] != null){
-                      data = response[ApiResponsKey.data];
+                  _isLoading = true;
+                  _isStartAssessmentTapped = true;
+            });
+            //var getManifestResponse = await getManifestFile(this.assessmentSelected.ASSESSMENT_UUID);
+            //AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
+            var setResponse = await setManifestFile(this.assessmentSelected.ASSESSMENT_UUID,list);
+            AppUtils.onPrintLog("setResponse >> $setResponse");
+            var getManifestResponse = await getManifestFile(this.assessmentSelected.ASSESSMENT_UUID);
+            AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
+            var data;
+            if(getManifestResponse != null){
+                AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
+      
+                if(getManifestResponse[ApiResponsKey.success] == true){
+                  if(getManifestResponse[ApiResponsKey.data] != null){
+                    data = getManifestResponse[ApiResponsKey.data];
+                  }
+                    
+                }else {
+                  if(getManifestResponse[ApiResponsKey.error] != null){
+                      _isError = true;
+                      Map error = getManifestResponse[ApiResponsKey.error];
+                      if(error[ApiResponsKey.message] != null){
+                        errorMessage = error[ApiResponsKey.message];
+                      }
+                      if(_isError == true){
+                        AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
+                      }
                     }
+                }
+            }
+          
+            if(data != null){
+              if(data['assessment_meta'] != null){
+                Map meta = data['assessment_meta'];
+                String status = meta['assessment_files_upload_status'] as String;
+
+                if(status != 'Complete'){
                       
+                  if(data['assessment_files_status'] != null){
+                    List<dynamic> list = data['assessment_files_status'];
+                    
+                    for( dynamic fileStatus in list){
+                      needTouploadFileCount++;
+                      //AssessmentTasks task = taskList[index];
+                      String status = fileStatus['assessment_task_file_status'] as String;
+                      if(status != null && status != '' && status != 'OK') {
+                        var uploadResponse = await uploadManifestFile(fileStatus);
+                        if(uploadResponse != null){
+                          setState((){
+                            uploadFileCount++;
+                          });
+                        }
+                        print("upload >> $uploadResponse");
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            /*if(setResponse != null){
+                AppUtils.onPrintLog("setResponse >> $setResponse");
+                if(setResponse[ApiResponsKey.success] == true){
+                    var getManifestResponse = await getManifestFile(this.assessmentSelected.ASSESSMENT_UUID);
+                    var data;
+                    if(getManifestResponse != null){
+                        AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
+              
+                        if(getManifestResponse[ApiResponsKey.success] == true){
+                          if(getManifestResponse[ApiResponsKey.data] != null){
+                            data = getManifestResponse[ApiResponsKey.data];
+                          }
+                            
+                        }else {
+                          if(getManifestResponse[ApiResponsKey.error] != null){
+                              _isError = true;
+                              Map error = getManifestResponse[ApiResponsKey.error];
+                              if(error[ApiResponsKey.message] != null){
+                                errorMessage = error[ApiResponsKey.message];
+                              }
+                              if(_isError == true){
+                                AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
+                              }
+                            }
+                        }
+                    }
+                  
+                    if(data != null){
+                      if(data['assessment_meta'] != null){
+                        Map meta = data['assessment_meta'];
+                        String status = meta['assessment_files_upload_status'] as String;
+
+                        if(status != 'Complete'){
+                              
+                          if(data['assessment_files_status'] != null){
+                            List<dynamic> list = data['assessment_files_status'];
+                            
+                            for( dynamic fileStatus in list){
+                              //AssessmentTasks task = taskList[index];
+                              String status = fileStatus['assessment_task_file_status'] as String;
+                              if(status != null && status != '' && status != 'OK') {
+                                var uploadResponse = await uploadManifestFile(fileStatus);
+                                print("upload >> $uploadResponse");
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                   }else {
-                    if(response[ApiResponsKey.error] != null){
+                    if(setResponse[ApiResponsKey.error] != null){
                         _isError = true;
-                        Map error = response[ApiResponsKey.error];
+                        Map error = setResponse[ApiResponsKey.error];
                         if(error[ApiResponsKey.message] != null){
                           errorMessage = error[ApiResponsKey.message];
                         }
@@ -1137,31 +1426,127 @@ class _HomeState extends State<Home> {
                         }
                       }
                   }
-              }
+            }*/
+            if(needTouploadFileCount == uploadFileCount){
               setState((){
                 _isLoading = false;
                 _isStartAssessmentTapped = false;
               });
-              if(data != null){
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(responsData: data)));
-              }
-            } else {
-                _isError = true;
-                if(_isError == true){
-                  AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
-                }
-            }*/
+            }
+            
 
           } else {
-            setState((){
-                  _isLoading = false;
-                  _isStartAssessmentTapped = false;
-              });
-            AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+            AppUtils.showInSnackBar(_scaffoldKeyHome, 'First need to end assessment than upload.');
           }
-      } else {
-           AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_Download);
+
+        } else {
+          AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+          
+        }
       }
+    }
+
+    void _startAssessment() async {
+      if(_isLoading == false){
+          if(this.assessmentSelected.IS_END == 0){
+            if (this.assessmentSelected.IS_DOWNLOADED == 1){
+                setState((){
+                    _isLoading = true;
+                    _isStartAssessmentTapped = true;
+                });
+
+                if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
+                  AssessmentMetaData resMetadata = await DBManager.db.getAssessementsMetaData(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
+                  List<AssessmentTasks> list = await DBManager.db.getAllAssessementsTasks(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
+
+                  list.forEach((task){
+                      print('task >> $task');
+                      print('task questions >>${task.prompt}');
+                  });
+
+                  setState((){
+                      _isLoading = false;
+                      _isStartAssessmentTapped = false;
+                    });
+                    if(list != null && list.length > 0){
+                      final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(resMetadata: resMetadata,resAssessmentTask: list,resAssessment: this.assessmentSelected)));
+                      if(result != null){
+                            Assessment assessment = result as Assessment;
+                            //await DBManager.db.performAssessmetnsAction(candidate);
+                            var res = await DBManager.db.checkAssessementsExists(assessment);
+                            if (res.isEmpty){
+                              await DBManager.db.insertAssessmetns(assessment);
+                            } 
+                            var response =  await DBManager.db.getAssessements(assessment.ASSESSMENT_UUID,assessment.ASSESSOR_UUID);
+                            setState(() {
+                              
+                              if(this.assessmentSelected != null){
+                                updateCandidateList();
+                              }
+                              this.assessmentSelected = response != null?response as Assessment:null;
+                            });
+                        }
+                    }
+                  /*if(await AppUtils.isNetwrokAvailabe(context) == true){
+                    
+                    AppUtils.onShowLoder();
+                    Map body = {
+                      AppKey.param_assessment_uuid:this.assessmentSelected.ASSESSMENT_UUID
+                    };
+
+                    var response =  await APIManager().httpRequest(APIType.private,APIMathods.downloadAssessment,body) as Map;
+                    var data;
+                    if(response != null){
+                        AppUtils.onPrintLog("response >> $response");
+              
+                        if(response[ApiResponsKey.success] == true){
+                          if(response[ApiResponsKey.data] != null){
+                            data = response[ApiResponsKey.data];
+                          }
+                            
+                        }else {
+                          if(response[ApiResponsKey.error] != null){
+                              _isError = true;
+                              Map error = response[ApiResponsKey.error];
+                              if(error[ApiResponsKey.message] != null){
+                                errorMessage = error[ApiResponsKey.message];
+                              }
+                              if(_isError == true){
+                                AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
+                              }
+                            }
+                        }
+                    }
+                    setState((){
+                      _isLoading = false;
+                      _isStartAssessmentTapped = false;
+                    });
+                    if(data != null){
+                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(responsData: data)));
+                    }
+                  } else {
+                      _isError = true;
+                      if(_isError == true){
+                        AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
+                      }
+                  }*/
+
+                } else {
+                  setState((){
+                        _isLoading = false;
+                        _isStartAssessmentTapped = false;
+                    });
+                  AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+                }
+            } else {
+                AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_Download);
+            }
+          } else {
+            AppUtils.showInSnackBar(_scaffoldKeyHome, 'Need to upload assessment document.');
+          }
+      }
+      
+      
 
     }
 
@@ -1169,24 +1554,25 @@ class _HomeState extends State<Home> {
 }
 
 class SearchCandidateView extends StatefulWidget {
-  SearchCandidateView({Key key,this.arrCadidates}) : super(key: key);
+  SearchCandidateView({Key key,this.arrAssessments,this.currentAssessment}) : super(key: key);
 
-  final List<Candidate> arrCadidates;
+  final List<Assessment> arrAssessments;
+  final Assessment currentAssessment;
   _SearchCandidateViewState createState() => _SearchCandidateViewState();
 }
 
 class _SearchCandidateViewState extends State<SearchCandidateView> {
 
   TextEditingController txtSearch = TextEditingController();
-  List<Candidate> arrSearch = List<Candidate> ();
+  List<Assessment> arrSearch = List<Assessment> ();
   BuildContext globalContext;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    if(widget.arrCadidates != null){
+    if(widget.arrAssessments != null){
       setState((){
-        arrSearch.addAll(widget.arrCadidates);
+        arrSearch.addAll(widget.arrAssessments);
       });
     }
   }
@@ -1195,6 +1581,21 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
     if(mounted){
       super.setState(fn);
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    // TODO: implement didChangeDependencies
+    super.didChangeDependencies();
+    print('didChangeDependencies');
+
+  }
+
+  @override
+  void didUpdateWidget(SearchCandidateView oldWidget) {
+    // TODO: implement didUpdateWidget
+    super.didUpdateWidget(oldWidget);
+    print('didUpdateWidget');
   }
 
   @override
@@ -1249,10 +1650,18 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
 
   Widget _buildCanidateTiles(BuildContext context, index){
 
-      Candidate assessment = this.arrSearch[index];
+
+      Assessment assessment = this.arrSearch[index];
+      bool isSelectedAssessment = false;
+      print('widget.currentCandidate.ASSESSMENT_ID >> ${widget.currentAssessment.ASSESSMENT_ID}');
+      print('assessment.ASSESSMENT_ID >> ${assessment.ASSESSMENT_ID}');
+      if(widget.currentAssessment.ASSESSMENT_ID == assessment.ASSESSMENT_ID){
+        isSelectedAssessment = true;
+      }
 
       String firstsName = assessment.ASSESSMENT_CANDIDATE_FIRST;
       String lastName = assessment.ASSESSMENT_CANDIDATE_LAST;
+      String fullName = '$firstsName $lastName';
 
       return ListTile(
         title: Container(
@@ -1265,15 +1674,36 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
             )
           ),
           padding: EdgeInsets.symmetric(horizontal: 10.0,vertical: 5),
-          child: Text(
-                  '$firstsName $lastName',
-                  textAlign: TextAlign.left,
-                  style: TextStyle(
-                      fontFamily: ThemeFont.font_pourceSanPro,
-                      color: ThemeColor.theme_dark,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18.0),
+          child: Container(
+                height: MediaQuery.of(context).size.height,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Padding(
+                      padding: EdgeInsets.only(left: 10),
+                      child: Text(
+                          fullName,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                              fontFamily: ThemeFont.font_pourceSanPro,
+                              color: ThemeColor.theme_dark,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18.0),
+                        ),
+                    ),
+                    isSelectedAssessment?Container(
+                      padding: EdgeInsets.only(right: 10),
+                      width: 35,
+                      height: 35,
+                      child: Image.asset(ThemeImage.image_yes),
+                    ):SizedBox(
+                      height: 0,
+                      width: 0,
+                    ),
+                  ],
                 ),
+              ),
         ),
         onTap: (){
           Navigator.of(context).pop(assessment);
@@ -1282,10 +1712,10 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
   }
 
   void filterSearchResult(String searchText){
-       List<Candidate> dummySearchList = List<Candidate>();
-    dummySearchList.addAll(widget.arrCadidates);
+       List<Assessment> dummySearchList = List<Assessment>();
+    dummySearchList.addAll(widget.arrAssessments);
       if(searchText.isNotEmpty){
-          List<Candidate> arrDynamic = List<Candidate>();
+          List<Assessment> arrDynamic = List<Assessment>();
           dummySearchList.forEach((assessment){
                 String fullName = assessment.ASSESSMENT_CANDIDATE_FIRST + ' ' +assessment.ASSESSMENT_CANDIDATE_LAST;
                 AppUtils.onPrintLog('fullName >>> $fullName');
@@ -1304,7 +1734,7 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
         
         setState(() {
           this.arrSearch.clear();
-          this.arrSearch.addAll(widget.arrCadidates);
+          this.arrSearch.addAll(widget.arrAssessments);
         });
         return;
       }

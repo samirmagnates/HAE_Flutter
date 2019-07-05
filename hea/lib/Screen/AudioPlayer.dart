@@ -15,9 +15,9 @@ enum PlayerState { stopped, playing, paused }
 class CustomAudioPlayer extends StatefulWidget {
   @override
   
-  CustomAudioPlayer({Key key,@required this.url,@required this.taskUuid }): super(key:key);
+  CustomAudioPlayer({Key key,@required this.url,@required this.assessmentUuid }): super(key:key);
   String url;
-  String taskUuid;
+  String assessmentUuid;
   _CustomAudioPlayerState createState() => _CustomAudioPlayerState();
 }
 
@@ -159,9 +159,13 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
         setState(() {
         isDownloading = true;
         });
+        
+        String taskFolder = await AppUtils.getAssessmentPath(widget.assessmentUuid);
+        String docDirectory = await AppUtils.getDocumentPath();
+        await AppUtils.getCreateFolder(taskFolder);
 
-        String pathFolder = await AppUtils.getLocalPath(widget.taskUuid);
-        final file = new File('$pathFolder/audio${path.extension(audioURL)}');
+        //String pathFolder = await AppUtils.getLocalPath(widget.taskUuid);
+        final file = new File('$docDirectory/$taskFolder/audio${path.extension(audioURL)}');
 
         if(await AppUtils.isNetwrokAvailabe(context) == true){
             final bytes = await _loadFileBytes(audioURL,
@@ -201,24 +205,7 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     new Material(child: _buildPlayer()),
-                    /*localFilePath != null
-                        ? new Text(localFilePath)
-                        : new Container(),
-                    new Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: new Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            new RaisedButton(
-                              onPressed: () => _loadFile(),
-                              child: new Text('Download'),
-                            ),
-                            new RaisedButton(
-                              onPressed: () => _playLocal(),
-                              child: new Text('play local'),
-                            ),
-                          ]),
-                    )*/
+                    
                   ]),
                   
                 ],

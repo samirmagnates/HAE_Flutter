@@ -1,5 +1,5 @@
 import 'package:intl/intl.dart';
-class Candidate{
+class Assessment{
 
   String ASSESSMENT_UUID;
   String ASSESSMENT_APPOINTMENT;
@@ -28,7 +28,7 @@ class Candidate{
   int IS_DOWNLOADED;
   int IS_END;
 
-  Candidate({
+  Assessment({
 
       this.ASSESSMENT_UUID,
       this.ASSESSMENT_APPOINTMENT,
@@ -75,7 +75,7 @@ class Candidate{
     //return json[key]?json[key]:json[key.toLowerCase()]?json[key.toLowerCase()]:'';
   }
 
-  Candidate.fromJSON(Map<String, dynamic> json){
+  Assessment.fromJSON(Map<String, dynamic> json){
       String formattedDate = '';
       String strTime = '';
 
@@ -102,7 +102,7 @@ class Candidate{
       ASSESSMENT_ADDRESS_COUNTRY = getValue(json,'ASSESSMENT_ADDRESS_COUNTRY') as String;
       ASSESSMENT_TITLE = getValue(json,'ASSESSMENT_TITLE') as String;
       ASSESSOR_UUID = getValue(json,'ASSESSOR_UUID') as String;
-      ASSESSMENT_ID = getValue(json,'ID') != null?getValue(json,'ID'): getValue(json,'assessment_id') != null?getValue(json,'assessment_id'):'';
+      ASSESSMENT_ID = getValue(json,'assessment_id') != null?getValue(json,'assessment_id'): getValue(json,'ID') != null?getValue(json,'ID'):'';
       ASSESSMENT_APPOINTMENT_DATE = formattedDate;
       ASSESSMENT_APPOINTMENT_TIME = strTime;
       IS_ADD_CONTACT = getValue(json,'IS_ADD_CONTACT') != null?getValue(json,'IS_ADD_CONTACT'):0;

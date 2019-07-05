@@ -15,6 +15,11 @@ PODS:
   - device_calendar (0.0.1):
     - Flutter
   - Flutter (1.0.0)
+  - flutter_sound (0.0.1):
+    - Flutter
+  - flutter_video_compress (0.3.0):
+    - Flutter
+    - Regift
   - flutter_youtube_view (1.1.4):
     - Flutter
     - YoutubeKit
@@ -25,9 +30,10 @@ PODS:
     - Flutter
   - path_provider (0.0.1):
     - Flutter
-  - permission_handler (3.0.2):
+  - permission_handler (3.1.0):
     - Flutter
   - Reachability (3.2)
+  - Regift (1.5.0)
   - screen (0.0.1):
     - Flutter
   - shared_preferences (0.0.1):
@@ -47,7 +53,9 @@ DEPENDENCIES:
   - connectivity (from `.symlinks/plugins/connectivity/ios`)
   - contacts_service (from `.symlinks/plugins/contacts_service/ios`)
   - device_calendar (from `.symlinks/plugins/device_calendar/ios`)
-  - Flutter (from `.symlinks/flutter/ios-release`)
+  - Flutter (from `.symlinks/flutter/ios`)
+  - flutter_sound (from `.symlinks/plugins/flutter_sound/ios`)
+  - flutter_video_compress (from `.symlinks/plugins/flutter_video_compress/ios`)
   - flutter_youtube_view (from `.symlinks/plugins/flutter_youtube_view/ios`)
   - image_picker (from `.symlinks/plugins/image_picker/ios`)
   - path_provider (from `.symlinks/plugins/path_provider/ios`)
@@ -61,6 +69,7 @@ SPEC REPOS:
   https://github.com/cocoapods/specs.git:
     - FMDB
     - Reachability
+    - Regift
     - YoutubeKit
 
 EXTERNAL SOURCES:
@@ -79,7 +88,11 @@ EXTERNAL SOURCES:
   device_calendar:
     :path: ".symlinks/plugins/device_calendar/ios"
   Flutter:
-    :path: ".symlinks/flutter/ios-release"
+    :path: ".symlinks/flutter/ios"
+  flutter_sound:
+    :path: ".symlinks/plugins/flutter_sound/ios"
+  flutter_video_compress:
+    :path: ".symlinks/plugins/flutter_video_compress/ios"
   flutter_youtube_view:
     :path: ".symlinks/plugins/flutter_youtube_view/ios"
   image_picker:
@@ -106,12 +119,15 @@ SPEC CHECKSUMS:
   contacts_service: 64ebf2a313b34bff0acf668efac52ae402ba9be0
   device_calendar: 23b28a5f1ab3bf77e34542fb1167e1b8b29a98f5
   Flutter: 58dd7d1b27887414a370fcccb9e645c08ffd7a6a
+  flutter_sound: 0e8163ceac1e00eb6d894e2ae4641ba726a2c479
+  flutter_video_compress: 9792f107cc69789093d443fab7054c915302a2b5
   flutter_youtube_view: f9937ac435a82a758189c78c7a8828ec56fb0def
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   image_picker: 16e5fec1fbc87fd3b297c53e4048521eaf17cd06
   path_provider: f96fff6166a8867510d2c25fdcc346327cc4b259
-  permission_handler: 73cfc10e081c379c1dcc19cd0040c77e500fa936
+  permission_handler: fa6b0d784b1a43cb96b468a5b8365cb130b1956a
   Reachability: 33e18b67625424e47b6cde6d202dce689ad7af96
+  Regift: d097afd401021f4f42b102ee125ceeb125a38caf
   screen: abd91ca7bf3426e1cc3646d27e9b2358d6bf07b0
   shared_preferences: 1feebfa37bb57264736e16865e7ffae7fc99b523
   sqflite: ff1d9da63c06588cc8d1faf7256d741f16989d5a
