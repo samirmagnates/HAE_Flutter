@@ -26,7 +26,9 @@ class Assessment{
   int IS_ADD_CALENDER;
   String CALENDER_ID;
   int IS_DOWNLOADED;
+  int IS_UPLOADED;
   int IS_END;
+  
 
   Assessment({
 
@@ -55,6 +57,7 @@ class Assessment{
       this.IS_ADD_CALENDER,
       this.CALENDER_ID,
       this.IS_DOWNLOADED,
+      this.IS_UPLOADED,
       this.IS_END
   });
 
@@ -110,6 +113,7 @@ class Assessment{
       IS_ADD_CALENDER = getValue(json,'IS_ADD_CALENDER') != null?getValue(json,'IS_ADD_CALENDER'):0;
       CALENDER_ID = getValue(json,'CALENDER_ID');
       IS_DOWNLOADED = getValue(json,'IS_DOWNLOADED') != null?getValue(json,'IS_DOWNLOADED'):0;
+      IS_UPLOADED = getValue(json,'IS_UPLOADED') != null?getValue(json,'IS_UPLOADED'):0;
       IS_END = getValue(json,'IS_END') != null?getValue(json,'IS_END'):0;
       
   }
@@ -120,7 +124,7 @@ class Assessment{
     'assessment_candidate_email':ASSESSMENT_CANDIDATE_EMAIL,'assessment_candidate_number':ASSESSMENT_CANDIDATE_NUMBER,'assessment_address_company':ASSESSMENT_ADDRESS_COMPANY,
     'assessment_address_address1':ASSESSMENT_ADDRESS_ADDRESS1,'assessment_address_address2':ASSESSMENT_ADDRESS_ADDRESS2,'assessment_address_towncity':ASSESSMENT_ADDRESS_TOWNCITY,
     'assessment_address_county':ASSESSMENT_ADDRESS_COUNTY,'assessment_address_postcode':ASSESSMENT_ADDRESS_POSTCODE,'assessment_address_country':ASSESSMENT_ADDRESS_COUNTRY,
-    'assessment_title':ASSESSMENT_TITLE,'assessor_uuid':ASSESSOR_UUID,'assessment_id':ASSESSMENT_ID,'is_add_contact':IS_ADD_CONTACT,'contact_id':CONTACT_ID,'is_add_calender':IS_ADD_CALENDER,'calender_id':CALENDER_ID,'is_downloaded':IS_DOWNLOADED,'is_end':IS_END
+    'assessment_title':ASSESSMENT_TITLE,'assessor_uuid':ASSESSOR_UUID,'assessment_id':ASSESSMENT_ID,'is_add_contact':IS_ADD_CONTACT,'contact_id':CONTACT_ID,'is_add_calender':IS_ADD_CALENDER,'calender_id':CALENDER_ID,'is_downloaded':IS_DOWNLOADED,'is_uploaded':IS_UPLOADED,'is_end':IS_END
     };
   
 

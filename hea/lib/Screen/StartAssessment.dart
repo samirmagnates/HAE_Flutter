@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hea/Model/AssessmentTasks.dart';
@@ -49,7 +50,7 @@ class _StartAssessmentState extends State<StartAssessment> {
     String candidateName = '';
     bool _isEndAssessmentTapped = false;
     bool _isLoading = false;
-
+    Subscription _subscription;
   @override
   void initState() {
     // TODO: implement initState
@@ -128,6 +129,9 @@ class _StartAssessmentState extends State<StartAssessment> {
     // TODO: implement dispose
     super.dispose();
     txtAnswer.dispose();
+    if(_subscription != null){
+      _subscription.unsubscribe();
+    }
   }
 
   @override
@@ -143,10 +147,12 @@ class _StartAssessmentState extends State<StartAssessment> {
             icon: Image.asset(ThemeImage.image_back),
             onPressed: () async {
               try {
-                await AppUtils.deleteLocalFolder(this.assessmentMetaData.assessmentUuid);
+                final String  assessorPath =  await AppUtils.getAssessorPath();
+                await AppUtils.deleteLocalFolder('$assessorPath/${this.assessmentMetaData.assessmentUuid}');
               } catch (e){
                 print('back res >>> ${e.toString()}');
               }
+              AppUtils.onPrintLog("pop  >> 10");
               Navigator.pop(context);//Navigator.of(context).pop(),
             }  
         )
@@ -239,6 +245,7 @@ class _StartAssessmentState extends State<StartAssessment> {
               _isLoading = true;
               _isEndAssessmentTapped = true;
        });
+       AppUtils.onPrintLog("pop  >> 11");
     Navigator.of(context).pop();
   }
 
@@ -360,7 +367,11 @@ class _StartAssessmentState extends State<StartAssessment> {
   }
   
   goToResultScreen() async {
+    if(_subscription != null){
+      _subscription.unsubscribe();
+    }
     final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => ResultScreen(resMetadata: this.assessmentMetaData,resAssessmentTask: this.arrAssessmentTask,resAssessment: this.assessment)));
+   AppUtils.onPrintLog("pop  >> 12");
     Navigator.pop(context,result);
   }
 
@@ -1560,6 +1571,40 @@ class _StartAssessmentState extends State<StartAssessment> {
     
   }
 
+   Future<String> compressImage(File image) async {
+      String docDirectory = await AppUtils.getDocumentPath();
+    //if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
+      final file = new File('$docDirectory/${this.currentAssessmentTask.assessmentTaskLocalFile}');
+      if (await file.exists()){
+          await file.delete();
+          this.currentAssessmentTask.assessmentTaskLocalFile = '';
+      }
+    //}
+    String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
+    await AppUtils.getCreateFolder(taskFolder);
+    
+    String fileExtesion = 'jpeg';
+    if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
+        List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
+        fileExtesion = arrExtention.first;
+    } 
+    final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+    final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+    var res2 = await image.copy('$docDirectory/$filePath');
+    print('res2 >> $res2');
+
+    /*//final file1 = new File('$docDirectory/$filePath');
+    Im.Image image1 = Im.decodeImage(image.readAsBytesSync());
+    Im.Image smallerImage = Im.copyResize(image1,width: 512,height: 512); // choose the size here, it will maintain aspect ratio
+    var decodedImageFile = File('$docDirectory/$filePath');
+    decodedImageFile.writeAsBytesSync(Im.encodeJpg(smallerImage, quality: 50));
+    //decodedImageFile.writeAsBytes(Im.encodeJpg(smallerImage, quality: 50));*/
+    return filePath;
+    
+  }
+
+  
+
   /// Question ImageView return widget show image from url.
   /// pass and fail button for submit resut and  go to next task
 
@@ -1662,48 +1707,27 @@ class _StartAssessmentState extends State<StartAssessment> {
                                 icon: Image.asset(ThemeImage.image_camera),
                                 onPressed: () async {
                                   getPermision(Permission.camera);
-                                  
                                   //CameraCapture();
                                   var picture = await ImagePicker.pickImage(
                                     source: ImageSource.camera,
+                                    maxWidth: 512,
+                                    maxHeight: 512
                                   );
                                   if(picture != null){
-                                      String docDirectory = await AppUtils.getDocumentPath();
-                                    //if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
-                                      final file = new File('$docDirectory/${this.currentAssessmentTask.assessmentTaskLocalFile}');
-                                      if (await file.exists()){
-                                          await file.delete();
-                                          this.currentAssessmentTask.assessmentTaskLocalFile = '';
-                                      }
-                                    //}
-
-                                  
-
-                                    String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
-                                    await AppUtils.getCreateFolder(taskFolder);
-                                    
-                                    String fileExtesion = 'jpeg';
-                                    if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
-                                        List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
-                                        fileExtesion = arrExtention.first;
-                                    } 
-                                    final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
-                                    final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
-                                    var res2 = await picture.copy('$docDirectory/$filePath');
-                                    print('res2 >> $res2');
-
-                                  final file1 = new File('$docDirectory/$filePath');
-                                  Im.Image image1 = Im.decodeImage(file1.readAsBytesSync());
-                                  Im.Image smallerImage = Im.copyResize(image1,width: 1024,height: 1024); // choose the size here, it will maintain aspect ratio
-                                  var decodedImageFile = File('$docDirectory/$filePath');
-                                  decodedImageFile.writeAsBytesSync(Im.encodeJpg(smallerImage, quality: 50));
+                                    setState((){
+                                      _isLoading = true;
+                                    });
+                                    //var path = await compute(compressImage,picture);
+                                    var path = await compressImage(picture);
+                                    String filePath = path.toString();
 
                                     setState(() {
+                                        _isLoading = false;
                                         this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
                                         this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
                                     });
                                   }
-                                  },
+                                },
                               ),
                             ),
                           ),
@@ -1735,13 +1759,21 @@ class _StartAssessmentState extends State<StartAssessment> {
                                       Center(child: Text(
                                         'Photo',
                                         style: TextStyle(
-                                          color: ThemeColor.theme_dark,
-                                          fontFamily: ThemeFont.font_pourceSanPro,
-                                          fontSize: 30.0,
-                                          fontWeight: FontWeight.bold
+                                            color: ThemeColor.theme_dark,
+                                            fontFamily: ThemeFont.font_pourceSanPro,
+                                            fontSize: 30.0,
+                                            fontWeight: FontWeight.bold
+                                          ),
+                                          textAlign: TextAlign.center,
                                         ),
-                                        textAlign: TextAlign.center,
-                                      ),)
+                                      ),
+                                      _isLoading? Container(
+                                                height: MediaQuery.of(context).size.height,
+                                                width: MediaQuery.of(context).size.width,
+                                                child: Center(
+                                                  child: CircularProgressIndicator(),
+                                                ),
+                                              ) : SizedBox(height: 0.0, width: 0.0,),
                                     ],
                                   ),
                                 ):
@@ -1754,15 +1786,8 @@ class _StartAssessmentState extends State<StartAssessment> {
                                         decoration: BoxDecoration(
                                           color: Colors.white
                                         ),
-                                        
                                       ),
                                       Center(
-                                        /*child:CachedNetworkImage(
-                                          imageUrl: this.currentAssessmentTask.assessmentTaskLocalFile,
-                                          placeholder: (context,url) => Center(
-                                            child: new CircularProgressIndicator()
-                                          )
-                                        )*/
                                         child: FutureBuilder(
                                           future: AppUtils.getDocumentPath(),
                                           builder: (BuildContext context,AsyncSnapshot snapShot){
@@ -1792,7 +1817,8 @@ class _StartAssessmentState extends State<StartAssessment> {
                                           },
                                         )
                                         
-                                      )
+                                      ),
+                                      _isLoading?_showCircularProgress() : SizedBox(height: 0.0, width: 0.0,),
                                     ],
                                   ),
                                 )
@@ -2119,62 +2145,84 @@ class _StartAssessmentState extends State<StartAssessment> {
                               alignment: Alignment.topLeft,
                               decoration: BoxDecoration(
                               ),
-                              child: IconButton(
-                                icon: Image.asset(ThemeImage.image_camera),
-                                onPressed: () async {
-                                  getPermision(Permission.camera);
-                                  //CameraCapture();
-                                  String docDirectory = await AppUtils.getDocumentPath();
-                                  await ImagePicker.pickVideo(source: ImageSource.camera).then((File videoFile) async {
-                                  if (videoFile != null && mounted) {
-                                    if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
-                                      final file = new File('$docDirectory/${this.currentAssessmentTask.assessmentTaskLocalFile}');
-                                      if (await file.exists()){
-                                          await file.delete();
-                                          this.currentAssessmentTask.assessmentTaskLocalFile = '';
+                              child: Row(
+                                children: <Widget>[
+                                  IconButton(
+                                    icon: Image.asset(ThemeImage.image_camera),
+                                    onPressed: () async {
+                                      
+                                      getPermision(Permission.camera);
+                                      //CameraCapture();
+                                      String docDirectory = await AppUtils.getDocumentPath();
+                                      await ImagePicker.pickVideo(source: ImageSource.camera).then((File videoFile) async {
+                                      if (videoFile != null && mounted) {
+                                        if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
+                                          final file = new File('$docDirectory/${this.currentAssessmentTask.assessmentTaskLocalFile}');
+                                          if (await file.exists()){
+                                              await file.delete();
+                                              this.currentAssessmentTask.assessmentTaskLocalFile = '';
+                                          }
+                                        }
+                                        String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
+                                        
+                                        await AppUtils.getCreateFolder(taskFolder);
+                                        //String pathFolder = await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
+                                        String fileExtesion = 'mp4';
+                                        if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
+                                            List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
+                                            fileExtesion = arrExtention.first;
+                                        } 
+                                        final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+                                        final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+
+                                        String fileFullPath = '$docDirectory/$filePath'; 
+                                        var res2 = await videoFile.copy(fileFullPath);
+                                        print('res2 >> $res2');
+
+                                        //if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
+                                        
+                                        final file = new File(fileFullPath);
+                                        final _flutterVideoCompress = FlutterVideoCompress();
+                                        
+                                        final info = await _flutterVideoCompress.compressVideo(
+                                          file.path,
+                                          quality: VideoQuality.MediumQuality, // default(VideoQuality.DefaultQuality)
+                                          deleteOrigin: false, // default(false)
+                                        );
+
+                                        _subscription = _flutterVideoCompress.compressProgress$.subscribe((progress) {
+                                          debugPrint('progress: $progress');
+                                          if(progress == 100){
+                                            info.file.copy('$docDirectory/$filePath');
+                                            print('info >> $info');
+                                            setState(() {
+                                                this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
+                                                this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+                                            });
+                                          }
+                                        });
                                       }
-                                    }
-                                    String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
-                                    
-                                    await AppUtils.getCreateFolder(taskFolder);
-                                    //String pathFolder = await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
-                                    String fileExtesion = 'mp4';
-                                    if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
-                                        List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
-                                        fileExtesion = arrExtention.first;
-                                    } 
-                                    final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
-                                    final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
-
-                                    String fileFullPath = '$docDirectory/$filePath'; 
-                                    var res2 = await videoFile.copy(fileFullPath);
-                                    print('res2 >> $res2');
-
-                                    //if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
-                                    
-                                    final file = new File(fileFullPath);
-                                    final _flutterVideoCompress = FlutterVideoCompress();
-                                    final info = await _flutterVideoCompress.compressVideo(
-                                      file.path,
-                                      quality: VideoQuality.LowQuality, // default(VideoQuality.DefaultQuality)
-                                      deleteOrigin: false, // default(false)
-                                    );
-
-                                    await info.file.copy('$docDirectory/$filePath');
-                                    print('info >> $info');
-                                    setState(() {
-                                        this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
-                                        this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
                                     });
-                                  }
-                                });
-                                 /* var picture = await ImagePicker.pickVideo(
-                                    source: ImageSource.camera,
-                                  );*/
-                                  
-                                  
-
-                                  },
+                                     /* var picture = await ImagePicker.pickVideo(
+                                        source: ImageSource.camera,
+                                      );*/
+                                      
+                                      },
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 15),
+                                    child: Text(
+                                      'Maximum 2 minitues of video recroding allow',
+                                      style: TextStyle(
+                                        color: ThemeColor.theme_dark,
+                                        fontFamily: ThemeFont.font_pourceSanPro,
+                                        fontSize: 30.0,
+                                        fontWeight: FontWeight.bold
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  )
+                                ],
                               ),
                             ),
                           ),

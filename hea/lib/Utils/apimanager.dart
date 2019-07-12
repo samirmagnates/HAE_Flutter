@@ -16,9 +16,10 @@ class APIManager {
     dynamic requestBody; 
     
     Map<String, String> requestHeaders = {
-       //'Accept': 'application/json',
+       //'content-type': 'application/json',
        //"content-type": "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW",
      };
+     
     
     if(urltype == APIType.public){
       url = url+'account/';
@@ -27,18 +28,23 @@ class APIManager {
       requestHeaders[AppKey.header_Authorization] = userToken;
     }
     if(method == APIMathods.setManifest){
+      //requestHeaders[HttpHeaders.contentTypeHeader] = 'text/plain';
       requestBody = body[AppKey.param_rawJson];
       url = url+'manifest/set/';
     } else if(method == APIMathods.getManifest){
       requestBody = body;
       url = url+'manifest/get/';
     } else if(method == APIMathods.uploadManifest){
+      //requestHeaders[HttpHeaders.contentTypeHeader] = 'text/plain';
       requestBody = body[AppKey.param_rawJson];
       url = url+'manifest/upload/';
     } else {
       url = url+method+'/';
       requestBody = body;
+      //requestHeaders[HttpHeaders.contentTypeHeader] = 'application/json';
     }
+
+     AppUtils.onPrintLog("$method >>> $requestBody");
     
     var jsonData;
     try{

@@ -64,6 +64,7 @@ class DBManager{
           "${AppDatabase.tbl_assessments_field_assessment_is_add_calender} INTEGER DEFAULT 0,"
           "${AppDatabase.tbl_assessments_field_assessment_calender_id} TEXT,"
           "${AppDatabase.tbl_assessments_field_assessment_is_downloaded} INTEGER DEFAULT 0,"
+          "${AppDatabase.tbl_assessments_field_assessment_is_uploaded} INTEGER DEFAULT 0,"
           "${AppDatabase.tbl_assessments_field_assessment_is_end} INTEGER DEFAULT 0"
         ")");
 
@@ -143,13 +144,14 @@ class DBManager{
         int is_add_calender = assessment.IS_ADD_CALENDER != null ? assessment.IS_ADD_CALENDER:0;
         String calender_id = assessment.CALENDER_ID != null ? assessment.CALENDER_ID:'';
         int is_downloaded = assessment.IS_DOWNLOADED != null ? assessment.IS_DOWNLOADED:0;
+        int is_uploaded = assessment.IS_UPLOADED != null ? assessment.IS_UPLOADED:0;
         int is_end = assessment.IS_END != null ? assessment.IS_END:0;
         
 
         final db = await database;
         var res = await db.rawInsert(
-          "INSERT INTO ${AppDatabase.tbl_name_assessments} (${AppDatabase.tbl_assessments_field_assessment_uuid},${AppDatabase.tbl_assessments_field_assessment_appointment},${AppDatabase.tbl_assessments_field_assessment_assessor_first},${AppDatabase.tbl_assessments_field_assessment_assessor_last},${AppDatabase.tbl_assessments_field_assessment_candidate_first},${AppDatabase.tbl_assessments_field_assessment_candidate_last},${AppDatabase.tbl_assessments_field_assessment_candidate_email},${AppDatabase.tbl_assessments_field_assessment_candidate_number},${AppDatabase.tbl_assessments_field_assessment_address_company},${AppDatabase.tbl_assessments_field_assessment_address_address1},${AppDatabase.tbl_assessments_field_assessment_address_address2},${AppDatabase.tbl_assessments_field_assessment_address_towncity},${AppDatabase.tbl_assessments_field_assessment_address_county},${AppDatabase.tbl_assessments_field_assessment_address_postcode},${AppDatabase.tbl_assessments_field_assessment_address_country},${AppDatabase.tbl_assessments_field_assessment_title},${AppDatabase.tbl_assessments_field_assessor_uuid},${AppDatabase.tbl_assessments_field_id},${AppDatabase.tbl_assessments_field_assessment_is_add_contact},${AppDatabase.tbl_assessments_field_assessment_contact_id},${AppDatabase.tbl_assessments_field_assessment_is_add_calender},${AppDatabase.tbl_assessments_field_assessment_calender_id},${AppDatabase.tbl_assessments_field_assessment_is_downloaded},${AppDatabase.tbl_assessments_field_assessment_is_end})"
-          " VALUES ('$assessment_uuid','$assessment_appointment','$assessment_assessor_first','$assessment_assessor_last','$assessment_candidate_first','$assessment_candidate_last','$assessment_candidate_email','$assessment_candidate_number','$assessment_address_company','$assessment_address_address1','$assessment_address_address2','$assessment_address_towncity','$assessment_address_county','$assessment_address_postcode','$assessment_address_country','$assessment_title','$assessor_uuid',$assessment_id,$is_add_contact,'$contact_id',$is_add_calender,'$calender_id',$is_downloaded,$is_end)");
+          "INSERT INTO ${AppDatabase.tbl_name_assessments} (${AppDatabase.tbl_assessments_field_assessment_uuid},${AppDatabase.tbl_assessments_field_assessment_appointment},${AppDatabase.tbl_assessments_field_assessment_assessor_first},${AppDatabase.tbl_assessments_field_assessment_assessor_last},${AppDatabase.tbl_assessments_field_assessment_candidate_first},${AppDatabase.tbl_assessments_field_assessment_candidate_last},${AppDatabase.tbl_assessments_field_assessment_candidate_email},${AppDatabase.tbl_assessments_field_assessment_candidate_number},${AppDatabase.tbl_assessments_field_assessment_address_company},${AppDatabase.tbl_assessments_field_assessment_address_address1},${AppDatabase.tbl_assessments_field_assessment_address_address2},${AppDatabase.tbl_assessments_field_assessment_address_towncity},${AppDatabase.tbl_assessments_field_assessment_address_county},${AppDatabase.tbl_assessments_field_assessment_address_postcode},${AppDatabase.tbl_assessments_field_assessment_address_country},${AppDatabase.tbl_assessments_field_assessment_title},${AppDatabase.tbl_assessments_field_assessor_uuid},${AppDatabase.tbl_assessments_field_id},${AppDatabase.tbl_assessments_field_assessment_is_add_contact},${AppDatabase.tbl_assessments_field_assessment_contact_id},${AppDatabase.tbl_assessments_field_assessment_is_add_calender},${AppDatabase.tbl_assessments_field_assessment_calender_id},${AppDatabase.tbl_assessments_field_assessment_is_downloaded},${AppDatabase.tbl_assessments_field_assessment_is_uploaded},${AppDatabase.tbl_assessments_field_assessment_is_end})"
+          " VALUES ('$assessment_uuid','$assessment_appointment','$assessment_assessor_first','$assessment_assessor_last','$assessment_candidate_first','$assessment_candidate_last','$assessment_candidate_email','$assessment_candidate_number','$assessment_address_company','$assessment_address_address1','$assessment_address_address2','$assessment_address_towncity','$assessment_address_county','$assessment_address_postcode','$assessment_address_country','$assessment_title','$assessor_uuid',$assessment_id,$is_add_contact,'$contact_id',$is_add_calender,'$calender_id',$is_downloaded,$is_uploaded,$is_end)");
         return res;
     }
     updateAssessmetns(Assessment assessment) async {
@@ -269,27 +271,35 @@ class DBManager{
         return res;
     }
     
-    getAssessementsTask(String task_uuid,String assessment_uuid,String assessor_uuid) async {
+    getAssessementsTask(String taskUuid,String assessmentUuid,String assessorUuid) async {
       final db = await database;
-      List<Map> list = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_tasks} WHERE ${AppDatabase.tbl_tasks_field_assessment_task_uuid} = ? AND ${AppDatabase.tbl_tasks_field_assessment_uuid} = ? AND ${AppDatabase.tbl_tasks_field_assessor_uuid} = ?',['$task_uuid','$assessment_uuid','$assessor_uuid']);
+      List<Map> list = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_tasks} WHERE ${AppDatabase.tbl_tasks_field_assessment_task_uuid} = ? AND ${AppDatabase.tbl_tasks_field_assessment_uuid} = ? AND ${AppDatabase.tbl_tasks_field_assessor_uuid} = ?',['$taskUuid','$assessmentUuid','$assessorUuid']);
       print('list >> $list');
       return list.isNotEmpty ? AssessmentTasks.fromJSON(list.first) : null;
       
     }
     
-    getAllAssessementsTasks(String assessment_uuid,String assessor_uuid) async {
+    getAllAssessementsTasks(String assessmentUuid,String assessorUuid) async {
       final db = await database;
-      var res = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_tasks} WHERE ${AppDatabase.tbl_tasks_field_assessment_uuid}="$assessment_uuid" AND ${AppDatabase.tbl_tasks_field_assessor_uuid}="$assessor_uuid"');
+      var res = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_tasks} WHERE ${AppDatabase.tbl_tasks_field_assessment_uuid}="$assessmentUuid" AND ${AppDatabase.tbl_tasks_field_assessor_uuid}="$assessorUuid"');
       List<AssessmentTasks> list =
           res.isNotEmpty ? res.map((c) => AssessmentTasks.fromJSON(c)).toList() : [];
       return list;
     }
 
-    clearDataBase(String assessor_uuid) async {
+    deleteTaskData(String assessmentUuid) async{
       final db = await database;
 
-      db.delete(AppDatabase.tbl_name_assessments, where: "${AppDatabase.tbl_assessments_field_assessor_uuid} = ?", whereArgs: [assessor_uuid]);
-      db.delete(AppDatabase.tbl_name_assessment_meta, where: "${AppDatabase.tbl_assessment_meta_field_assessor_uuid} = ?", whereArgs: [assessor_uuid]);
-      db.delete(AppDatabase.tbl_name_tasks, where: "${AppDatabase.tbl_tasks_field_assessor_uuid} = ?", whereArgs: [assessor_uuid]);
+      db.delete(AppDatabase.tbl_name_assessments, where: "${AppDatabase.tbl_assessments_field_assessment_uuid} = ?", whereArgs: [assessmentUuid]);
+      db.delete(AppDatabase.tbl_name_assessment_meta, where: "${AppDatabase.tbl_assessment_meta_field_assessment_uuid} = ?", whereArgs: [assessmentUuid]);
+      db.delete(AppDatabase.tbl_name_tasks, where: "${AppDatabase.tbl_tasks_field_assessment_uuid} = ?", whereArgs: [assessmentUuid]);
+    }
+
+    clearDataBase(String assessorUuid) async {
+      final db = await database;
+
+      db.delete(AppDatabase.tbl_name_assessments, where: "${AppDatabase.tbl_assessments_field_assessor_uuid} = ?", whereArgs: [assessorUuid]);
+      db.delete(AppDatabase.tbl_name_assessment_meta, where: "${AppDatabase.tbl_assessment_meta_field_assessor_uuid} = ?", whereArgs: [assessorUuid]);
+      db.delete(AppDatabase.tbl_name_tasks, where: "${AppDatabase.tbl_tasks_field_assessor_uuid} = ?", whereArgs: [assessorUuid]);
     }
 }

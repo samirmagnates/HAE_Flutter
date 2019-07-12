@@ -23,6 +23,8 @@ class _customVideoPlayerState extends State<customVideoPlayer> {
   TargetPlatform _platform;
   VideoPlayerController _videoPlayerController1;
   ChewieController _chewieController;
+  bool isMaxLength = false;
+  Duration maxDuration = Duration(minutes: 2);
 
   @override
   void initState() {
@@ -38,6 +40,9 @@ class _customVideoPlayerState extends State<customVideoPlayer> {
       String docDirectory =  await AppUtils.getDocumentPath();
       final file = new File('$docDirectory/${widget.url}');
       _videoPlayerController1 = VideoPlayerController.file(file);
+      if(_videoPlayerController1.value.duration > maxDuration){
+          isMaxLength = true;
+      }
     }
     _chewieController = ChewieController(
         videoPlayerController: _videoPlayerController1,
@@ -93,7 +98,16 @@ class _customVideoPlayerState extends State<customVideoPlayer> {
           children: <Widget>[
             Expanded(
               child: Center(
-                child: _chewieController != null?Chewie(
+                child: isMaxLength?Text(
+                  'Maximum 2 minitues of video recroding allow',
+                  style: TextStyle(
+                    color: ThemeColor.theme_dark,
+                    fontFamily: ThemeFont.font_pourceSanPro,
+                    fontSize: 30.0,
+                    fontWeight: FontWeight.bold
+                  ),
+                  textAlign: TextAlign.center,
+                ):_chewieController != null?Chewie(
                   controller: _chewieController,
                 ):Container(
                     height: MediaQuery.of(context).size.height,

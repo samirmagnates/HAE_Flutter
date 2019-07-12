@@ -54,6 +54,7 @@ class AppUtils{
     }
 
     static void onHideLoader(context){
+      AppUtils.onPrintLog("pop  >> 13");
       Navigator.pop(context);
     }
     
@@ -81,12 +82,15 @@ class AppUtils{
       return appDirectory.path;
     }
 
-    static Future<String> getAssessmentPath(String assessmentUDID) async{
-      
-      return 'Document/$assessmentUDID';
+    static Future<String> getAssessorPath() async {
+      final String assessorUUID = await AppUtils.getAssessorUUID();
+      return 'Document/$assessorUUID';
     }
 
-    
+    static Future<String> getAssessmentPath(String assessmentUDID) async{
+      final String assessorPath =  await AppUtils.getAssessorPath();
+      return '$assessorPath/$assessmentUDID';
+    }
 
     static Future<String> getCreateFolder(String path) async{
       final String appDirectory = await getDocumentPath();
@@ -98,17 +102,10 @@ class AppUtils{
       return directory;
     }
 
-    static Future<void> deleteLocalFolder(String folderName) async{
+    static Future<void> deleteLocalFolder(String path) async{
       final String appDirectory = await getDocumentPath();
-      final String directory = '$appDirectory/Document/$folderName';
-      /*final directory = new Directory(folderDirectory);
-      directory.exists().then((isThere){
-        if(isThere == false){
-
-        }
-      });*/
-
-      //await Directory(directory).create(recursive: true);
+      //final String directory = '$appDirectory/$assessorPath/$folderName';
+      final String directory = '$appDirectory/$path';
       try {
         var res = await Directory(directory).delete(recursive: true);
          print('res >>> $res');
@@ -198,6 +195,7 @@ class AppMessage{
     static const String kMsg_Reset = 'Please check your email';
     static const String kError_Download = 'Need to Download assessment first!';
     static const String kError_DownloadAlready = 'Assessment already downloaded!';
+    static const String kError_UploadedAlready = 'Assessment already uploaded!';
 }
 
 class AppRoute{
@@ -248,6 +246,10 @@ class AppKey {
   static const String param_assessor_uuid = 'assessor_uuid';
   static const String param_appuser_token = 'appuser_token';
   static const String param_assessment_uuid = 'assessment_uuid';
+  static const String param_candidate_uuid = 'candidate_uuid';
+  static const String param_assessment_result = 'assessment_result';
+  static const String param_assessment_obtainmark = 'assessment_obtainmark';
+  static const String param_assessment_data = 'assessment_data';
   static const String key_isContactAdd = 'isContactAdd';
   static const String key_isCalenterEventAdd = 'isCalenterEventAdd';
   static const String param_rawJson = 'rawJson';
@@ -303,6 +305,7 @@ class AppDatabase{
   static final String tbl_assessments_field_assessment_is_add_calender = 'is_add_calender';
   static final String tbl_assessments_field_assessment_calender_id = 'calender_id';
   static final String tbl_assessments_field_assessment_is_downloaded = 'is_downloaded';
+  static final String tbl_assessments_field_assessment_is_uploaded = 'is_uploaded';
   static final String tbl_assessments_field_assessment_is_end = 'is_end';
   
 

@@ -80,6 +80,7 @@ class _HomeState extends State<Home> {
               if(_isDeleteTap == false)  {
               //await _performDeletAction();
                await DBManager.db.clearDataBase(this.assessmentSelected.ASSESSOR_UUID);
+               AppUtils.onPrintLog("pop  >> 1");
                 Navigator.of(context).pop();
               } 
             } 
@@ -139,24 +140,8 @@ class _HomeState extends State<Home> {
 
     for (int i = 0; i < this.arrAssessments.length; i++){
         Assessment can = this.arrAssessments[i];
-        if (can.IS_ADD_CONTACT == 1){
-            Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.contacts]);
-            PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.contacts];
-            if(_permissionStatus == PermissionStatus.granted){
-                await _deleteContact(can);
-            } else {
-                openPermisionPopupBox('Contact Access Denie','Enable contact service for application form setting');
-            }
-        }
-        if (can.IS_ADD_CALENDER == 1){
-            Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.calendar]);
-            PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.contacts];
-            if(_permissionStatus == PermissionStatus.granted){
-                await _deleteCalenderEvent(can);
-            } else {
-                openPermisionPopupBox('Contact Access Denie','Enable contact service for application form setting');
-            }
-        }
+        await _deleteContact(can);
+        await _deleteCalenderEvent(can);
     }
   }
 
@@ -604,6 +589,7 @@ class _HomeState extends State<Home> {
             }
         }
         setState(() {
+          AppUtils.onPrintLog("_isLoading >> 4");
             _isLoading = false;
         });
         if(data != null){
@@ -611,6 +597,7 @@ class _HomeState extends State<Home> {
         }
       } else {
           setState(() {
+            AppUtils.onPrintLog("_isLoading >> 5");
             _isLoading = false;
           });
           _isError = true;
@@ -622,6 +609,7 @@ class _HomeState extends State<Home> {
 
         AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
         setState(() {
+          AppUtils.onPrintLog("_isLoading >> 6");
             _isLoading = false;
             this.assessmentSelected = null;
           });
@@ -647,6 +635,7 @@ class _HomeState extends State<Home> {
             AppUtils.onPrintLog("response >> $response");
   
             if(response[ApiResponsKey.success] == true){
+              AppUtils.onPrintLog("pop  >> 2");
                 Navigator.of(context).popUntil((route) => route.isFirst);
             }else {
               if(response[ApiResponsKey.error] != null){
@@ -662,9 +651,9 @@ class _HomeState extends State<Home> {
             }
         }
         setState((){
+          AppUtils.onPrintLog("_isLoading >> 7");
           _isLoading = false;
         });
-         _isLoading = false;
         if(data != null){
           //Navigator.of(context).pushNamed(AppRoute.routeHomeScreen);
         }
@@ -690,6 +679,7 @@ class _HomeState extends State<Home> {
                 child: new Text("Cancel"),
                 onPressed: () {
                   if(_isLoading == false){
+                    AppUtils.onPrintLog("pop  >> 3");
                     Navigator.of(context).pop();
                   }
                   
@@ -699,6 +689,7 @@ class _HomeState extends State<Home> {
                 child: new Text("Logout"),
                 onPressed: () {
                   if(_isLoading == false){
+                    AppUtils.onPrintLog("pop  >> 4");
                     Navigator.of(context).pop();
                     logout();
                   }
@@ -766,6 +757,7 @@ class _HomeState extends State<Home> {
         }
         
         setState(() {
+          AppUtils.onPrintLog("_isLoading >> 8");
           _isLoading = false;
           _isAddToDeviceTapped = false;
         });
@@ -819,33 +811,50 @@ class _HomeState extends State<Home> {
         }
     }
 
-    Future _deleteContact(Assessment candidate) async {
+    Future _deleteContact(Assessment asseesment) async {
 
-      try{
-        //var contact = await ContactsService.getContacts(query: 'identifier:${candidate.CONTACT_ID}');
-        var allContacts = await ContactsService.getContacts();
-        var filtered = allContacts.where((c) => c.identifier.contains("${candidate.CONTACT_ID}")).toList();
-        AppUtils.onPrintLog('calender >>> $filtered');
-        await ContactsService.deleteContact(filtered.first);
-      } on PlatformException catch(e){
-        //openPermisionPopupBox('Contact ${e.message}','Enable contact service for application form setting');
-        //AppUtils.showInSnackBar(_scaffoldKey,'Contact ${e.message}');
-      }
-
+      if (asseesment.IS_ADD_CONTACT == 1){
+            Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.contacts]);
+            PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.contacts];
+            if(_permissionStatus == PermissionStatus.granted){
+                try{
+                  //var contact = await ContactsService.getContacts(query: 'identifier:${candidate.CONTACT_ID}');
+                  var allContacts = await ContactsService.getContacts();
+                  var filtered = allContacts.where((c) => c.identifier.contains("${asseesment.CONTACT_ID}")).toList();
+                  AppUtils.onPrintLog('calender >>> $filtered');
+                  await ContactsService.deleteContact(filtered.first);
+                } on PlatformException catch(e){
+                  //openPermisionPopupBox('Contact ${e.message}','Enable contact service for application form setting');
+                  AppUtils.showInSnackBar(_scaffoldKeyHome,'Contact delete ${e.message}');
+                }
+            } else {
+                openPermisionPopupBox('Contact Access Denie','Enable contact service for application form setting');
+            }
+        }
     }
 
     
 
-    Future _deleteCalenderEvent(Assessment candidate) async {
+    Future _deleteCalenderEvent(Assessment assessment) async {
 
-      final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
-      Calendar calendar = calendarsResult.data.first;
-      var createEventResult = await _deviceCalendarPlugin.deleteEvent(calendar.id, candidate.CALENDER_ID);
-      if (createEventResult.isSuccess) {
-          AppUtils.onPrintLog('calender >>> $createEventResult');
-      } else {
-        AppUtils.onPrintLog('calender error >>> ${createEventResult.errorMessages.join(' | ')}');
-      }
+      if (assessment.IS_ADD_CALENDER == 1){
+            Map<PermissionGroup, PermissionStatus> permissionRequestResult = await PermissionHandler().requestPermissions([PermissionGroup.calendar]);
+            PermissionStatus _permissionStatus = permissionRequestResult[PermissionGroup.contacts];
+            if(_permissionStatus == PermissionStatus.granted){
+                final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+                Calendar calendar = calendarsResult.data.first;
+                var createEventResult = await _deviceCalendarPlugin.deleteEvent(calendar.id, assessment.CALENDER_ID);
+                if (createEventResult.isSuccess) {
+                    AppUtils.onPrintLog('calender >>> $createEventResult');
+                } else {
+                  AppUtils.onPrintLog('calender error >>> ${createEventResult.errorMessages.join(' | ')}');
+                }
+            } else {
+                openPermisionPopupBox('Contact Access Denie','Enable contact service for application form setting');
+            }
+        }
+
+      
 
     }
     updateCandidateList() async{
@@ -903,31 +912,7 @@ class _HomeState extends State<Home> {
             AppUtils.onPrintLog('calender error >>> ${createEventResult.errorMessages.join(' | ')}');
             
           }
-        /*final Event event = Event(
-          title: '$candidateFullName  assessment  of ${this.assessmentSelected.ASSESSMENT_TITLE}',
-          description: this.assessmentSelected.ASSESSMENT_TITLE,
-          startDate: startDate,
-          endDate: null
-        );
-        try{
-
-            
-            bool isAdded = await Add2Calendar.addEvent2Cal(event);
-            if (isAdded == true){
-              AppUtils.onPrintLog('calender >>> $isAdded');
-              this.assessmentSelected.IS_ADD_CALENDER = 1;
-              var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
-              if (res.isNotEmpty){
-                await DBManager.db.updateAssessmetns(this.assessmentSelected);
-              } 
-            } else {
-
-            }
-            
-          } on PlatformException catch(e){
-            openPermisionPopupBox('Calender ${e.message}','Enable calender service for application form setting');
-            //AppUtils.showInSnackBar(_scaffoldKey,e.toString());
-          }*/
+        
       } else {
         openPermisionPopupBox('Calender Access Denie','Enable calender service for application form setting');
       }
@@ -1002,6 +987,7 @@ class _HomeState extends State<Home> {
                         child: FlatButton(
                           onPressed: ()  {
                             if(_isLoading == false){
+                              AppUtils.onPrintLog("pop  >> 5");
                               Navigator.of(context).pop();
                             }
                           },
@@ -1091,10 +1077,8 @@ class _HomeState extends State<Home> {
                     } 
                   }
               }
-
-
-
               setState((){
+                AppUtils.onPrintLog("_isLoading >> 9");
                 _isLoading = false;
                 _isDownloadTapped = false;
               });
@@ -1107,6 +1091,7 @@ class _HomeState extends State<Home> {
 
           } else {
             setState((){
+              AppUtils.onPrintLog("_isLoading >> 10");
                   _isLoading = false;
                   _isStartAssessmentTapped = false;
               });
@@ -1129,7 +1114,6 @@ class _HomeState extends State<Home> {
     setManifestFile(String assessmentUdid,List<AssessmentTasks> taskList) async {
 
         Map<String,dynamic> data = Map<String,dynamic>();
-
         Map<String,dynamic> assessment_meta = Map<String,dynamic>();
         assessment_meta['assessment_uuid'] = assessmentUdid;
         List<Map <String,dynamic>> assessment_files = List<Map <String,dynamic>>();
@@ -1154,21 +1138,7 @@ class _HomeState extends State<Home> {
           
           
         }
-        /*taskList.forEach((task) async {
-            if(task.assessmentTaskLocalFile.isNotEmpty) {
-                  File file =  File('${task.assessmentTaskLocalFile}');
-                  String fileName = path.basename(file.path);
-                  file.length().then((len) {
-                  String fileSize = len.toString();
-                  
-                  Map<String,dynamic> file_info = Map<String,dynamic>();
-                  file_info['assessment_task_uuid'] = task.assessmentTaskUuid;
-                  file_info['assessment_task_upload_filesize'] = fileSize;
-                  file_info['assessment_task_upload_filename'] = fileName;
-                  assessment_files.add(file_info);
-                  });
-            }
-        });*/
+       
         data['assessment_meta'] = assessment_meta;
         data['assessment_files'] = assessment_files;
         String json = jsonEncode(data);
@@ -1182,18 +1152,31 @@ class _HomeState extends State<Home> {
               AppKey.param_rawJson:json
             };
 
-            var response =  await APIManager().httpRequest(APIType.private,APIMathods.setManifest,body) as Map;
-            return response;
+            var setResponse =  await APIManager().httpRequest(APIType.private,APIMathods.setManifest,body) as Map;
+            AppUtils.onPrintLog("setResponse >> $setResponse");
+            getManifestFile(this.assessmentSelected.ASSESSMENT_UUID);
+            
             
           } else {
+
               _isError = true;
               if(_isError == true){
                 AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
               }
+              setState((){
+              AppUtils.onPrintLog("_isLoading >> 15");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
             return null;
           }
 
         } else {
+          setState((){
+              AppUtils.onPrintLog("_isLoading >> 16");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
           AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
           return null;
         }
@@ -1206,10 +1189,82 @@ class _HomeState extends State<Home> {
               AppKey.param_assessment_uuid:assessmentUdid
             };
 
-            var response =  await APIManager().httpRequest(APIType.private,APIMathods.getManifest,body) as Map;
-            return response;
+            var getManifestResponse =  await APIManager().httpRequest(APIType.private,APIMathods.getManifest,body) as Map;
+            AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
+            var data;
+            if(getManifestResponse != null){
+                AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
+      
+                if(getManifestResponse[ApiResponsKey.success] == true){
+                  if(getManifestResponse[ApiResponsKey.data] != null){
+                    data = getManifestResponse[ApiResponsKey.data];
+                  }
+                    
+                }else {
+                  if(getManifestResponse[ApiResponsKey.error] != null){
+                      _isError = true;
+                      Map error = getManifestResponse[ApiResponsKey.error];
+                      if(error[ApiResponsKey.message] != null){
+                        errorMessage = error[ApiResponsKey.message];
+                      }
+                      if(_isError == true){
+                        AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
+                      }
+                    } 
+                }
+            }
+          
+            if(data != null){
+              if(data['assessment_meta'] != null){
+                Map meta = data['assessment_meta'];
+                String status = meta['assessment_files_upload_status'] as String;
+
+                if(status != 'Complete'){
+                      
+                  if(data['assessment_files_status'] != null){
+                    List<dynamic> list = data['assessment_files_status'];
+                    
+                    for( dynamic fileStatus in list){
+                      //AssessmentTasks task = taskList[index];
+                      String status = fileStatus['assessment_task_file_status'] as String;
+                      if(status != null && status != '' && status != 'OK') {
+                        needTouploadFileCount++;
+                        uploadManifestFile(fileStatus);
+                      }
+                    }
+
+                    if(needTouploadFileCount == 0){
+                      AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_UploadedAlready);
+                      setState((){
+                        AppUtils.onPrintLog("_isLoading >> 18");
+                        _isLoading = false;
+                        _isStartAssessmentTapped = false;
+                      });
+                    }
+                  }
+                } else {
+                  AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_UploadedAlready);
+                  setState((){
+                    AppUtils.onPrintLog("_isLoading >> 118");
+                    _isLoading = false;
+                    _isStartAssessmentTapped = false;
+                  });
+                }
+              }
+            }else {
+              setState((){
+              AppUtils.onPrintLog("_isLoading >> 188");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
+            }
             
           } else {
+              setState((){
+              AppUtils.onPrintLog("_isLoading >> 17");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
               _isError = true;
               if(_isError == true){
                 AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
@@ -1220,7 +1275,117 @@ class _HomeState extends State<Home> {
         
     }
 
-    
+    uploadTaskResult() async{
+        AssessmentMetaData resMetadata = await DBManager.db.getAssessementsMetaData(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
+        List<AssessmentTasks> taskList = await DBManager.db.getAllAssessementsTasks(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
+        Map<String,dynamic> data = Map<String,dynamic>();
+
+        Map<String,dynamic> assessment_meta = Map<String,dynamic>();
+        assessment_meta['assessment_uuid'] = this.assessmentSelected.ASSESSMENT_UUID;
+        List<Map <String,dynamic>> assessment_files = List<Map <String,dynamic>>();
+
+        for( AssessmentTasks task in taskList){
+            Map<String,dynamic> file_info = Map<String,dynamic>();
+            file_info['assessment_task_type'] = task.assessmentTaskType;
+            file_info['assessment_task_uuid'] = task.assessmentTaskUuid;
+            file_info['assessment_task_answer'] = task.assessmentTaskAnswerIdResponseId;
+            file_info['assessment_task_result'] = task.result;
+            assessment_files.add(file_info);
+        }
+       
+        String json = jsonEncode(assessment_files);
+        AppUtils.onPrintLog("json >> $json");
+
+
+        if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
+          if(await AppUtils.isNetwrokAvailabe(context) == true){
+            
+            Map body = {
+              AppKey.param_assessment_uuid:resMetadata.assessmentUuid,
+              AppKey.param_candidate_uuid:resMetadata.candidateUuid,
+              AppKey.param_assessor_uuid:resMetadata.assessorUuid,
+              AppKey.param_assessment_result:resMetadata.assessmentResult,
+              AppKey.param_assessment_obtainmark:resMetadata.assessmentObtainmark,
+              AppKey.param_assessment_data:json,
+
+            };
+
+            var responseUploadTaskResult =  await APIManager().httpRequest(APIType.private,APIMathods.uploadAssessment,body) as Map;
+            AppUtils.onPrintLog("response_uploadTaskResult >> $responseUploadTaskResult");
+            if(responseUploadTaskResult != null){
+      
+                if(responseUploadTaskResult[ApiResponsKey.success] == true){
+                    performAssessmentTaskDelete(this.assessmentSelected);
+                    
+                }else {
+                  if(responseUploadTaskResult[ApiResponsKey.error] != null){
+                      _isError = true;
+                      Map error = responseUploadTaskResult[ApiResponsKey.error];
+                      if(error[ApiResponsKey.message] != null){
+                        errorMessage = error[ApiResponsKey.message];
+                      }
+                      if(_isError == true){
+                        AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
+                      }
+
+                      setState((){
+                        AppUtils.onPrintLog("_isLoading >> 1B1");
+                        _isLoading = false;
+                        _isStartAssessmentTapped = false;
+                      });
+                    } 
+                }
+            }
+            
+            
+          } else {
+              _isError = true;
+              if(_isError == true){
+                AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
+              }
+              setState((){
+              AppUtils.onPrintLog("_isLoading >> 11");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
+            return null;
+          }
+
+        } else {
+          setState((){
+              AppUtils.onPrintLog("_isLoading >> 12");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+          });
+          AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+          return null;
+        }
+    }
+
+    performAssessmentTaskDelete(Assessment assessment) async{
+        await _deleteContact(this.assessmentSelected);
+        await _deleteCalenderEvent(this.assessmentSelected);
+
+        this.assessmentSelected.IS_ADD_CONTACT = 0;
+        this.assessmentSelected.CONTACT_ID = '';
+        this.assessmentSelected.IS_ADD_CALENDER = 0;
+        this.assessmentSelected.CALENDER_ID = '';
+        this.assessmentSelected.IS_UPLOADED = 1;
+        var res = await DBManager.db.checkAssessementsExists(this.assessmentSelected);
+        if (res.isNotEmpty){
+          await DBManager.db.updateAssessmetns(this.assessmentSelected);
+          await updateCandidateList();
+        } 
+
+        final String  assessorPath =  await AppUtils.getAssessorPath();
+        await AppUtils.deleteLocalFolder('$assessorPath/${this.assessmentSelected.ASSESSMENT_UUID}');
+        //await DBManager.db.deleteTaskData(this.assessmentSelected.ASSESSMENT_UUID);
+        setState((){
+          AppUtils.onPrintLog("_isLoading >> 1");
+          _isLoading = false;
+          _isStartAssessmentTapped = false;
+        });
+    }
 
     uploadManifestFile(Map<String,dynamic>fileStatus) async{
 
@@ -1238,19 +1403,14 @@ class _HomeState extends State<Home> {
               String docDirectory = await AppUtils.getDocumentPath();
               String fileFullPath = '$docDirectory/${task.assessmentTaskLocalFile}';
               final File file =  File(fileFullPath);
-              String fileName = path.basename(file.path);
-              print('File fileName-->$fileName');
-              int fileSize = await getFileSize(fileFullPath);
-              //print('File fileSize-->$fileSize');
-              //List<int> data = await file.readAsBytesSync();
-              //print(data);
-              String base64 = base64Encode(file.readAsBytesSync());
-              print('File base64-->$base64');
+              
+              List<int> imageBytes = file.readAsBytesSync();
+              String base64 =  base64Encode(imageBytes);
               assessmentFile['assessment_file_content'] = base64;
               
           }
           data['assessment_meta'] = assessmentMeta;
-          data['assessment_files'] = assessmentFile;
+          data['assessment_file'] = assessmentFile;
           String json = jsonEncode(data);
           AppUtils.onPrintLog("json >> $json");
           if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty){
@@ -1258,21 +1418,43 @@ class _HomeState extends State<Home> {
               Map body = {
                 AppKey.param_rawJson:json
               };
-               var response =  await APIManager().httpRequest(APIType.private,APIMathods.uploadManifest,body) as Map;
+              var response =  await APIManager().httpRequest(APIType.private,APIMathods.uploadManifest,body) as Map;
+              uploadFileCount++;
+              AppUtils.onPrintLog("response 3424 >> $response");
+              AppUtils.onPrintLog("uploadFileCount >> $uploadFileCount");
+              AppUtils.onPrintLog("needTouploadFileCount >> $needTouploadFileCount");
+              if(uploadFileCount >= needTouploadFileCount){
+                uploadTaskResult();
+                
+              }
               return response;
             } else {
                 _isError = true;
                 if(_isError == true){
                   AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
                 }
+                setState((){
+              AppUtils.onPrintLog("_isLoading >> 19");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
               return null;
             }
-
           } else {
             AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
+            setState((){
+              AppUtils.onPrintLog("_isLoading >> 20");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
             return null;
           }
         } else {
+          setState((){
+              AppUtils.onPrintLog("_isLoading >> 21");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
           return null;
         }
     }
@@ -1296,150 +1478,38 @@ class _HomeState extends State<Home> {
 
     void _uploadAssessment() async {
 
-      if(_isLoading == false){
+      if(_isLoading == false || _isStartAssessmentTapped == false){
           if(this.assessmentSelected.ASSESSMENT_UUID != null && this.assessmentSelected.ASSESSMENT_UUID.isNotEmpty ){
           if(this.assessmentSelected.IS_END == 1){
             
-            AssessmentMetaData resMetadata = await DBManager.db.getAssessementsMetaData(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
+            
             List<AssessmentTasks> list = await DBManager.db.getAllAssessementsTasks(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
 
-            AppUtils.showInSnackBar(_scaffoldKeyHome, 'Upload assessment is under devlopment');
+           // AppUtils.showInSnackBar(_scaffoldKeyHome, 'Upload assessment is under devlopment');
             setState((){
                   _isLoading = true;
                   _isStartAssessmentTapped = true;
             });
             //var getManifestResponse = await getManifestFile(this.assessmentSelected.ASSESSMENT_UUID);
             //AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
-            var setResponse = await setManifestFile(this.assessmentSelected.ASSESSMENT_UUID,list);
-            AppUtils.onPrintLog("setResponse >> $setResponse");
-            var getManifestResponse = await getManifestFile(this.assessmentSelected.ASSESSMENT_UUID);
-            AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
-            var data;
-            if(getManifestResponse != null){
-                AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
-      
-                if(getManifestResponse[ApiResponsKey.success] == true){
-                  if(getManifestResponse[ApiResponsKey.data] != null){
-                    data = getManifestResponse[ApiResponsKey.data];
-                  }
-                    
-                }else {
-                  if(getManifestResponse[ApiResponsKey.error] != null){
-                      _isError = true;
-                      Map error = getManifestResponse[ApiResponsKey.error];
-                      if(error[ApiResponsKey.message] != null){
-                        errorMessage = error[ApiResponsKey.message];
-                      }
-                      if(_isError == true){
-                        AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
-                      }
-                    }
-                }
-            }
-          
-            if(data != null){
-              if(data['assessment_meta'] != null){
-                Map meta = data['assessment_meta'];
-                String status = meta['assessment_files_upload_status'] as String;
-
-                if(status != 'Complete'){
-                      
-                  if(data['assessment_files_status'] != null){
-                    List<dynamic> list = data['assessment_files_status'];
-                    
-                    for( dynamic fileStatus in list){
-                      needTouploadFileCount++;
-                      //AssessmentTasks task = taskList[index];
-                      String status = fileStatus['assessment_task_file_status'] as String;
-                      if(status != null && status != '' && status != 'OK') {
-                        var uploadResponse = await uploadManifestFile(fileStatus);
-                        if(uploadResponse != null){
-                          setState((){
-                            uploadFileCount++;
-                          });
-                        }
-                        print("upload >> $uploadResponse");
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            /*if(setResponse != null){
-                AppUtils.onPrintLog("setResponse >> $setResponse");
-                if(setResponse[ApiResponsKey.success] == true){
-                    var getManifestResponse = await getManifestFile(this.assessmentSelected.ASSESSMENT_UUID);
-                    var data;
-                    if(getManifestResponse != null){
-                        AppUtils.onPrintLog("getManifestResponse >> $getManifestResponse");
-              
-                        if(getManifestResponse[ApiResponsKey.success] == true){
-                          if(getManifestResponse[ApiResponsKey.data] != null){
-                            data = getManifestResponse[ApiResponsKey.data];
-                          }
-                            
-                        }else {
-                          if(getManifestResponse[ApiResponsKey.error] != null){
-                              _isError = true;
-                              Map error = getManifestResponse[ApiResponsKey.error];
-                              if(error[ApiResponsKey.message] != null){
-                                errorMessage = error[ApiResponsKey.message];
-                              }
-                              if(_isError == true){
-                                AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
-                              }
-                            }
-                        }
-                    }
-                  
-                    if(data != null){
-                      if(data['assessment_meta'] != null){
-                        Map meta = data['assessment_meta'];
-                        String status = meta['assessment_files_upload_status'] as String;
-
-                        if(status != 'Complete'){
-                              
-                          if(data['assessment_files_status'] != null){
-                            List<dynamic> list = data['assessment_files_status'];
-                            
-                            for( dynamic fileStatus in list){
-                              //AssessmentTasks task = taskList[index];
-                              String status = fileStatus['assessment_task_file_status'] as String;
-                              if(status != null && status != '' && status != 'OK') {
-                                var uploadResponse = await uploadManifestFile(fileStatus);
-                                print("upload >> $uploadResponse");
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }else {
-                    if(setResponse[ApiResponsKey.error] != null){
-                        _isError = true;
-                        Map error = setResponse[ApiResponsKey.error];
-                        if(error[ApiResponsKey.message] != null){
-                          errorMessage = error[ApiResponsKey.message];
-                        }
-                        if(_isError == true){
-                          AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
-                        }
-                      }
-                  }
-            }*/
-            if(needTouploadFileCount == uploadFileCount){
-              setState((){
-                _isLoading = false;
-                _isStartAssessmentTapped = false;
-              });
-            }
+            setManifestFile(this.assessmentSelected.ASSESSMENT_UUID,list);
             
-
+            
           } else {
+            setState((){
+              AppUtils.onPrintLog("_isLoading >> 13");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
             AppUtils.showInSnackBar(_scaffoldKeyHome, 'First need to end assessment than upload.');
           }
 
         } else {
+          setState((){
+              AppUtils.onPrintLog("_isLoading >> 14");
+              _isLoading = false;
+              _isStartAssessmentTapped = false;
+            });
           AppUtils.showInSnackBar(_scaffoldKeyHome, AppMessage.kError_NoAssessment);
           
         }
@@ -1465,6 +1535,7 @@ class _HomeState extends State<Home> {
                   });
 
                   setState((){
+                    AppUtils.onPrintLog("_isLoading >> 2");
                       _isLoading = false;
                       _isStartAssessmentTapped = false;
                     });
@@ -1487,52 +1558,11 @@ class _HomeState extends State<Home> {
                             });
                         }
                     }
-                  /*if(await AppUtils.isNetwrokAvailabe(context) == true){
-                    
-                    AppUtils.onShowLoder();
-                    Map body = {
-                      AppKey.param_assessment_uuid:this.assessmentSelected.ASSESSMENT_UUID
-                    };
-
-                    var response =  await APIManager().httpRequest(APIType.private,APIMathods.downloadAssessment,body) as Map;
-                    var data;
-                    if(response != null){
-                        AppUtils.onPrintLog("response >> $response");
-              
-                        if(response[ApiResponsKey.success] == true){
-                          if(response[ApiResponsKey.data] != null){
-                            data = response[ApiResponsKey.data];
-                          }
-                            
-                        }else {
-                          if(response[ApiResponsKey.error] != null){
-                              _isError = true;
-                              Map error = response[ApiResponsKey.error];
-                              if(error[ApiResponsKey.message] != null){
-                                errorMessage = error[ApiResponsKey.message];
-                              }
-                              if(_isError == true){
-                                AppUtils.showInSnackBar(_scaffoldKeyHome, errorMessage);
-                              }
-                            }
-                        }
-                    }
-                    setState((){
-                      _isLoading = false;
-                      _isStartAssessmentTapped = false;
-                    });
-                    if(data != null){
-                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => StartAssessment(responsData: data)));
-                    }
-                  } else {
-                      _isError = true;
-                      if(_isError == true){
-                        AppUtils.showInSnackBar(_scaffoldKeyHome,AppMessage.kError_NoInternet);
-                      }
-                  }*/
+                  
 
                 } else {
                   setState((){
+                    AppUtils.onPrintLog("_isLoading >> 3");
                         _isLoading = false;
                         _isStartAssessmentTapped = false;
                     });
@@ -1650,7 +1680,6 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
 
   Widget _buildCanidateTiles(BuildContext context, index){
 
-
       Assessment assessment = this.arrSearch[index];
       bool isSelectedAssessment = false;
       print('widget.currentCandidate.ASSESSMENT_ID >> ${widget.currentAssessment.ASSESSMENT_ID}');
@@ -1679,7 +1708,7 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
+                  children: <Widget>[ 
                     Padding(
                       padding: EdgeInsets.only(left: 10),
                       child: Text(
@@ -1704,8 +1733,9 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
                   ],
                 ),
               ),
-        ),
+        ),  
         onTap: (){
+          AppUtils.onPrintLog("pop  >> 6 ");
           Navigator.of(context).pop(assessment);
         },
       );
@@ -1717,14 +1747,13 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
       if(searchText.isNotEmpty){
           List<Assessment> arrDynamic = List<Assessment>();
           dummySearchList.forEach((assessment){
-                String fullName = assessment.ASSESSMENT_CANDIDATE_FIRST + ' ' +assessment.ASSESSMENT_CANDIDATE_LAST;
-                AppUtils.onPrintLog('fullName >>> $fullName');
-                AppUtils.onPrintLog('searchText >>> $searchText');
-                if(fullName.toLowerCase().contains(searchText.toLowerCase())){
-                    arrDynamic.add(assessment);
-                }
+              String fullName = assessment.ASSESSMENT_CANDIDATE_FIRST + ' ' +assessment.ASSESSMENT_CANDIDATE_LAST;
+              AppUtils.onPrintLog('fullName >>> $fullName');
+              AppUtils.onPrintLog('searchText >>> $searchText');
+              if(fullName.toLowerCase().contains(searchText.toLowerCase())){
+                  arrDynamic.add(assessment);
+              }
           });
-          
           setState(() {
             this.arrSearch.clear();
             this.arrSearch.addAll(arrDynamic);

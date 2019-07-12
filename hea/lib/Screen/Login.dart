@@ -172,6 +172,7 @@ class _LoginState extends State<Login> {
     });
       return;
     }
+    AppUtils.onPrintLog("pop  >> 7");
     Navigator.of(context).pop(context);
     var message = AppMessage.kError_SomethingWentWrong;
     if(await AppUtils.isNetwrokAvailabe(context) == true){

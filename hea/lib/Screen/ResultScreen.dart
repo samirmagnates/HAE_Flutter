@@ -97,10 +97,10 @@ class _ResultScreenState extends State<ResultScreen> {
             icon: Image.asset(ThemeImage.image_back),
             onPressed: () async {
               try {
-                //await AppUtils.deleteLocalFolder(this.assessmentMetaData.assessmentUuid);
               } catch (e){
                 print('back res >>> ${e.toString()}');
               }
+              AppUtils.onPrintLog("pop  >> 8");
               Navigator.pop(context);
               //Navigator.popUntil(context, ModalRoute.withName(AppRoute.routeHomeScreen));
             }  
@@ -445,7 +445,7 @@ class _ResultScreenState extends State<ResultScreen> {
         await DBManager.db.updateAssessmetnsTask(task);
     });
 
-    
+    AppUtils.onPrintLog("pop  >> 9");
     Navigator.pop(context,this.assessment);
     //Navigator.popUntil(context, ModalRoute.withName(AppRoute.routeHomeScreen));
   }
