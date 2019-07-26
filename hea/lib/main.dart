@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
         primaryColor: ThemeColor.theme_blue
       ),
       debugShowCheckedModeBanner: false,
-      home: Login(),
+      home: Login(),//CameraExampleHome(),
       routes: <String,WidgetBuilder>{
         AppRoute.routeLoginScreen:(BuildContext context) => Login(),
         AppRoute.routeHomeScreen:(BuildContext context) => Home(),

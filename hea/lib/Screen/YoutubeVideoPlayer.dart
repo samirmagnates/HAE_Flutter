@@ -35,23 +35,23 @@ class _YoutubeVideoPlayerState extends State<YoutubeVideoPlayer> implements YouT
 
   @override
   void onCurrentSecond(double second) {
-    //print("onCurrentSecond second = $second");
+    //AppUtils.onPrintLog("onCurrentSecond second = $second");
     _currentVideoSecond = second;
   }
 
   @override
   void onError(String error) {
-    print("onError error = $error");
+    AppUtils.onPrintLog("onError error = $error");
   }
 
   @override
   void onReady() {
-    print("onReady");
+    AppUtils.onPrintLog("onReady");
   }
 
   @override
   void onStateChange(String state) {
-    print("onStateChange state = $state");
+    AppUtils.onPrintLog("onStateChange state = $state");
     setState(() {
       _playerState = state;
     });
@@ -59,7 +59,7 @@ class _YoutubeVideoPlayerState extends State<YoutubeVideoPlayer> implements YouT
 
   @override
   void onVideoDuration(double duration) {
-    print("onVideoDuration duration = $duration");
+    AppUtils.onPrintLog("onVideoDuration duration = $duration");
   }
 
   void _onYoutubeCreated(FlutterYoutubeViewController controller) {

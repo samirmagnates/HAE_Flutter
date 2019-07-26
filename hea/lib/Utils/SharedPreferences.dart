@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:hea/Utils/AppUtils.dart';
 class SharedPreferencesManager{
   
   static Future getValue(String key) async{
@@ -11,7 +12,7 @@ class SharedPreferencesManager{
     if(value != null && key != null){
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var res = await prefs.setString(key, value);
-      print("res setValue >> $res");
+      AppUtils.onPrintLog("res setValue >> $res");
     }
     
   }
@@ -20,7 +21,7 @@ class SharedPreferencesManager{
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       var value  =  await prefs.get(key);
       if(value != null){
-        print("res getObject >> ${json.decode(value)}");
+        AppUtils.onPrintLog("res getObject >> ${json.decode(value)}");
         return json.decode(value);
       } 
       return '';

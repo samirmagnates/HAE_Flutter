@@ -92,8 +92,6 @@ class _LoginState extends State<Login> {
       return;
     }
 
-    
-
     if(await AppUtils.isNetwrokAvailabe(context) == true){
         
         String username = txtUserName.text ?? "";

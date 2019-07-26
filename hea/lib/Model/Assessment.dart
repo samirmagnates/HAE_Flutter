@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import '../Utils/AppUtils.dart';
 class Assessment{
 
   String ASSESSMENT_UUID;
@@ -62,13 +63,13 @@ class Assessment{
   });
 
   getValue(Map<String, dynamic> json,String key)  {
-    print(json);
-    print(key);
+    AppUtils.onPrintLog(json);
+    AppUtils.onPrintLog(key);
     if (json['$key'] != null){
       return json['$key'];
     } else {
       String lowerKey = key.toLowerCase();
-      print(lowerKey);
+      AppUtils.onPrintLog(lowerKey);
       if(json['${key.toLowerCase()}'] != null){
           return json['${key.toLowerCase()}'];
       } else {

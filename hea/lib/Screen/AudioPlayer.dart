@@ -170,7 +170,7 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
         if(await AppUtils.isNetwrokAvailabe(context) == true){
             final bytes = await _loadFileBytes(audioURL,
             onError: (Exception exception) =>
-                print('_loadFile => exception $exception'));
+                AppUtils.onPrintLog('_loadFile => exception $exception'));
            await file.writeAsBytes(bytes);
         } 
 

@@ -1,25 +1,33 @@
+import 'dart:async';
 import 'dart:io';
-
+import 'package:auto_orientation/auto_orientation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hea/Model/AssessmentTasks.dart';
-import 'package:hea/Model/AssessmentMetaData.dart';
-import 'package:hea/Model/QuestionOptions.dart';
-import 'package:hea/Utils/AppUtils.dart';
+import '../Model/AssessmentTasks.dart';
+import '../Model/AssessmentMetaData.dart';
+import '../Model/QuestionOptions.dart';
+import '../Utils/AppUtils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:hea/Screen/AudioPlayer.dart';
-import 'package:hea/Screen/VideoPlayer.dart';
+import 'AudioPlayer.dart';
+import 'VideoPlayer.dart';
+//import 'VideoPlayer1.dart';
 import '../Screen/YoutubeVideoPlayer.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import '../Screen/AudioRecorder.dart';
 import '../Screen/ResultScreen.dart';
-import 'package:hea/Model/Assessment.dart';
+import '../Model/Assessment.dart';
 import 'package:image/image.dart' as Im; 
 import 'package:flutter_video_compress/flutter_video_compress.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:chewie/chewie.dart';
+import 'package:video_player/video_player.dart';
+import 'package:flutter/foundation.dart';
+
+
 
 class StartAssessment extends StatefulWidget {
   @override
@@ -50,7 +58,19 @@ class _StartAssessmentState extends State<StartAssessment> {
     String candidateName = '';
     bool _isEndAssessmentTapped = false;
     bool _isLoading = false;
+
+
+    // for camera redod
+
+    //bool _isLoading = false;
+    bool _isMaxDuration = false;
+    String currentAssessmentUuid;
+    ChewieController _chewieController;
+    VideoPlayerController _videoPlayerController;
+    final _flutterVideoCompress = FlutterVideoCompress();
     Subscription _subscription;
+
+    final _loadingStreamController = StreamController<bool>.broadcast();
   @override
   void initState() {
     // TODO: implement initState
@@ -70,9 +90,9 @@ class _StartAssessmentState extends State<StartAssessment> {
             setState(() {
               this.currentAssessmentTask = this.arrAssessmentTask[currentTaskIndex];
               if(this.currentAssessmentTask.responses != null) {
-                print('this.currentAssessmentTask.responses >> ${this.currentAssessmentTask.responses}');
+                AppUtils.onPrintLog('this.currentAssessmentTask.responses >> ${this.currentAssessmentTask.responses}');
                 var jsonString = jsonDecode(this.currentAssessmentTask.responses);
-                print('arr >> $jsonString');
+                AppUtils.onPrintLog('arr >> $jsonString');
                 List arr = jsonDecode(jsonString);
                  arr.forEach((v) {
                    this.arrTaskOption.add(new QuestionOptions.fromJSON(v));
@@ -129,9 +149,17 @@ class _StartAssessmentState extends State<StartAssessment> {
     // TODO: implement dispose
     super.dispose();
     txtAnswer.dispose();
-    if(_subscription != null){
-      _subscription.unsubscribe();
+    /*if(_videoPlayerController != null){
+      _videoPlayerController.dispose();
+      _videoPlayerController = null;
     }
+
+    if(_chewieController != null){
+      _chewieController.dispose();
+      _chewieController = null;
+    }*/
+    
+    
   }
 
   @override
@@ -150,7 +178,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                 final String  assessorPath =  await AppUtils.getAssessorPath();
                 await AppUtils.deleteLocalFolder('$assessorPath/${this.assessmentMetaData.assessmentUuid}');
               } catch (e){
-                print('back res >>> ${e.toString()}');
+                AppUtils.onPrintLog('back res >>> ${e.toString()}');
               }
               AppUtils.onPrintLog("pop  >> 10");
               Navigator.pop(context);//Navigator.of(context).pop(),
@@ -205,7 +233,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                   this.currentAssessmentTask != null? getQuestionWidget():Container()
                 ],
               ),
-              _isLoading?_showCircularProgress() : SizedBox(height: 0.0, width: 0.0,),
+              //_isLoading?_showCircularProgress() : SizedBox(height: 0.0, width: 0.0,),
             ],
           )
       ),
@@ -250,9 +278,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   }
 
   Widget _showCircularProgress(){
-    if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
-    } 
+    return Center(child: CircularProgressIndicator());
   }
 
 ///  Get Widget as per task type
@@ -367,9 +393,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   }
   
   goToResultScreen() async {
-    if(_subscription != null){
-      _subscription.unsubscribe();
-    }
+    
     final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => ResultScreen(resMetadata: this.assessmentMetaData,resAssessmentTask: this.arrAssessmentTask,resAssessment: this.assessment)));
    AppUtils.onPrintLog("pop  >> 12");
     Navigator.pop(context,result);
@@ -557,7 +581,15 @@ class _StartAssessmentState extends State<StartAssessment> {
               });
           break;
           case QuestionType.question_videoRecordAnswer:
-                
+              if(_videoPlayerController != null){
+                //_videoPlayerController.dispose();
+                //_videoPlayerController = null;
+              }
+
+              if(_chewieController != null){
+                //_chewieController.dispose();
+                //_chewieController = null;
+              }
               setState(() {
                   this.currentAssessmentTask.result = result;
                   this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
@@ -1232,7 +1264,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                 child: CachedNetworkImage(
                                   imageUrl: this.currentAssessmentTask.assessmentTaskAssetUrl,
                                   placeholder: (context,url) => Center(
-                                    child: new CircularProgressIndicator()
+                                    child: _showCircularProgress()
                                   ),
                                 )
                               )
@@ -1532,6 +1564,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                   minHeight: 100
                                 ),
                                 child: isYoutubeURL?YoutubeVideoPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl):customVideoPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl,isLocal: false)
+                                
                               )
                               ),
                             ),
@@ -1573,14 +1606,15 @@ class _StartAssessmentState extends State<StartAssessment> {
 
    Future<String> compressImage(File image) async {
       String docDirectory = await AppUtils.getDocumentPath();
+      String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
     //if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
-      final file = new File('$docDirectory/${this.currentAssessmentTask.assessmentTaskLocalFile}');
+      final file = new File('$docDirectory/$taskFolder/${this.currentAssessmentTask.assessmentTaskLocalFile}');
       if (await file.exists()){
           await file.delete();
           this.currentAssessmentTask.assessmentTaskLocalFile = '';
       }
     //}
-    String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
+    
     await AppUtils.getCreateFolder(taskFolder);
     
     String fileExtesion = 'jpeg';
@@ -1591,7 +1625,8 @@ class _StartAssessmentState extends State<StartAssessment> {
     final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
     final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
     var res2 = await image.copy('$docDirectory/$filePath');
-    print('res2 >> $res2');
+    AppUtils.onPrintLog('res2 >> $res2');
+    image.delete();
 
     /*//final file1 = new File('$docDirectory/$filePath');
     Im.Image image1 = Im.decodeImage(image.readAsBytesSync());
@@ -1697,30 +1732,70 @@ class _StartAssessmentState extends State<StartAssessment> {
                             textAlign: TextAlign.left,
                             ),
                           ),
-                          Padding(
+                          Row(
+                            children: <Widget>[
+                              Padding(
+                                padding: EdgeInsets.symmetric(vertical: 10,horizontal: 15),
+                                child: Container(
+                                  alignment: Alignment.topLeft,
+                                  decoration: BoxDecoration(
+                                  ),
+                                  child: IconButton(
+                                    icon: Image.asset(ThemeImage.image_camera),
+                                    onPressed: () async {
+                                      getPermision(Permission.camera);
+                                      //CameraCapture();
+                                      var picture = await ImagePicker.pickImage(
+                                        source: ImageSource.camera,
+                                        maxWidth: 512,
+                                        maxHeight: 512
+                                      );
+                                      if(picture != null){
+                                        setState((){
+                                          _isLoading = true;
+                                        });
+                                        //var path = await compute(compressImage,picture);
+                                        var path = await compressImage(picture);
+                                        String filePath = path.toString();
+
+                                        setState(() {
+                                            _isLoading = false;
+                                            this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
+                                            this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                              this.currentAssessmentTask.assessmentTaskLocalFile.isEmpty?SizedBox(
+                            width: 10,
+                          ):Padding(
                             padding: EdgeInsets.symmetric(vertical: 10,horizontal: 15),
                             child: Container(
                               alignment: Alignment.topLeft,
                               decoration: BoxDecoration(
                               ),
                               child: IconButton(
-                                icon: Image.asset(ThemeImage.image_camera),
+                                icon: Image.asset(ThemeImage.image_edit),
                                 onPressed: () async {
-                                  getPermision(Permission.camera);
-                                  //CameraCapture();
-                                  var picture = await ImagePicker.pickImage(
-                                    source: ImageSource.camera,
-                                    maxWidth: 512,
-                                    maxHeight: 512
+                                  String docDirectory = await AppUtils.getDocumentPath();
+                                  String fileFullPath = '$docDirectory/${this.currentAssessmentTask.assessmentTaskLocalFile}';
+                                  final File file =  File(fileFullPath);
+                                  File croppedFile = await ImageCropper.cropImage(
+                                    sourcePath: file.path,
+                                    toolbarTitle: 'Cropper',
+                                    toolbarColor: Colors.blue,
+                                    toolbarWidgetColor: Colors.white, 
                                   );
-                                  if(picture != null){
+                                  if(croppedFile != null){
                                     setState((){
                                       _isLoading = true;
                                     });
                                     //var path = await compute(compressImage,picture);
-                                    var path = await compressImage(picture);
+                                    var path = await compressImage(croppedFile);
                                     String filePath = path.toString();
-
+                                    croppedFile.delete();
                                     setState(() {
                                         _isLoading = false;
                                         this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
@@ -1730,7 +1805,10 @@ class _StartAssessmentState extends State<StartAssessment> {
                                 },
                               ),
                             ),
+                          ),   
+                            ],
                           ),
+                          
                           
                         ]),
                       ),
@@ -1771,7 +1849,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                                 height: MediaQuery.of(context).size.height,
                                                 width: MediaQuery.of(context).size.width,
                                                 child: Center(
-                                                  child: CircularProgressIndicator(),
+                                                  child: _showCircularProgress(),
                                                 ),
                                               ) : SizedBox(height: 0.0, width: 0.0,),
                                     ],
@@ -1798,7 +1876,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                                 height: MediaQuery.of(context).size.height,
                                                 width: MediaQuery.of(context).size.width,
                                                 child: Center(
-                                                  child: CircularProgressIndicator(),
+                                                  child: _showCircularProgress(),
                                                 ),
                                               );
                                               } else {
@@ -1810,7 +1888,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                                 height: MediaQuery.of(context).size.height,
                                                 width: MediaQuery.of(context).size.width,
                                                 child: Center(
-                                                  child: CircularProgressIndicator(),
+                                                  child: _showCircularProgress(),
                                                 ),
                                               );
                                             }
@@ -1837,7 +1915,8 @@ class _StartAssessmentState extends State<StartAssessment> {
                               ),
                               Container(
                                 height: 50,
-                                child: this.currentAssessmentTask.assessmentTaskLocalFile.isEmpty?SizedBox():buttonPassFail()
+                                //child: this.currentAssessmentTask.assessmentTaskLocalFile.isEmpty?SizedBox():buttonPassFail()
+                                child: buttonPassFail()
                               ),
                               SizedBox(
                                 height: 20,
@@ -1888,6 +1967,16 @@ class _StartAssessmentState extends State<StartAssessment> {
       String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
       String docDirectory = await AppUtils.getDocumentPath();
       //String pathFolder =  await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
+
+      if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
+          
+        final file = new File('$docDirectory/$taskFolder/${this.currentAssessmentTask.assessmentTaskLocalFile}');
+        if (await file.exists()){
+            await file.delete();
+            this.currentAssessmentTask.assessmentTaskLocalFile = '';
+        }
+      }
+
       String fileExtesion = 'mp3';
       if(task.assessmentTaskUploadFormat != null && task.assessmentTaskUploadFormat.isNotEmpty){
           List<String> arrExtention = task.assessmentTaskUploadFormat.split(',');
@@ -1899,13 +1988,13 @@ class _StartAssessmentState extends State<StartAssessment> {
       final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
       final String filePath = '$taskFolder/${task.assessmentTaskUuid}_$currentTime.$fileExtesion';
 
-      final file = new File('$docDirectory/$filePath');
+      /*final file = new File('$docDirectory/$filePath');
       if ( await file.exists()){
           await file.delete();
           this.currentAssessmentTask.assessmentTaskLocalFile = '';
-      }
+      }*/
       
-      print('res2 >> $filePath');
+      AppUtils.onPrintLog('res2 >> $filePath');
       this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
       this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
       
@@ -1998,7 +2087,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                         height: MediaQuery.of(context).size.height,
                                         width: MediaQuery.of(context).size.width,
                                         child: Center(
-                                          child: CircularProgressIndicator(),
+                                          child: _showCircularProgress(),
                                         ),
                                       ):AudioRecorder(task:this.currentAssessmentTask,assessmentUuid:this.assessmentMetaData.assessmentUuid,filePath: filePath),
                                     )
@@ -2040,7 +2129,7 @@ class _StartAssessmentState extends State<StartAssessment> {
             height: MediaQuery.of(context).size.height,
             width: MediaQuery.of(context).size.width,
             child: Center(
-              child: CircularProgressIndicator(),
+              child: _showCircularProgress(),
             ),
           );
         }
@@ -2139,7 +2228,140 @@ class _StartAssessmentState extends State<StartAssessment> {
                             textAlign: TextAlign.left,
                             ),
                           ),
+                        ]),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                            //VideoPlayer1(assessmentTask: this.currentAssessmentTask,assessmentUuid: this.assessmentMetaData.assessmentUuid,),
+                            getCameraRecorder()
+                          ]
+                        ),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                              SizedBox(
+                                height: 30,
+                                child: Container(
+                                ),
+                              ),
+                              Container(
+                                height: 50,
+                                child: buttonPassFail()
+                              ),
+                              SizedBox(
+                                height: 20,
+                                child: Container(
+                                ),
+                              ),
+                          ]
+                        )
+                      )
+                    ],
+                  ),
+                  
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget questionRecordVideoViewAnswer1(){
+
+    bool isSubmitAnswer = this.currentAssessmentTask.result != null && this.currentAssessmentTask.result.isNotEmpty?true:false;
+    Color select_color = ThemeColor.theme_blue;
+    Widget selected_icon = SizedBox(width: 0,height: 0,);
+    bool isEnable = true;
+    if(isSubmitAnswer == true){
+        isEnable = false;
+        if(this.currentAssessmentTask.result == 'pass'){
+          select_color = ThemeColor.ans_green;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_yes),
+          );
+        } else {
+          select_color = ThemeColor.ans_Red;
+          selected_icon = Container(
+            padding: EdgeInsets.only(right: 10),
+            width: 35,
+            height: 35,
+            child: Image.asset(ThemeImage.image_no),
+          );
+        }
+    }
+    
+    return Expanded(
+      child: Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+              SizedBox(
+                height: 10,
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 15),
+                child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                    Text(
+                      'Capture',
+                        style: TextStyle(
+                          color: ThemeColor.theme_blue,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                    Text(
+                      '${this.currentTaskIndex + 1}/${this.totalTask}',
+                        style: TextStyle(
+                          color: ThemeColor.theme_dark,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w600
+                        ),
+                        textAlign: TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Expanded(
+                child: Container(
+                  child: CustomScrollView(
+                    slivers: <Widget>[
+                      SliverList(
+                        delegate: SliverChildListDelegate([
                           Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 15),
+                            child: Text(
+                            this.currentAssessmentTask.prompt!=null?this.currentAssessmentTask.prompt:'',
+                            style: TextStyle(
+                              color: ThemeColor.theme_dark,
+                              fontFamily: ThemeFont.font_pourceSanPro,
+                              fontSize: 20.0,
+                              fontWeight: FontWeight.w600
+                            ),
+                            textAlign: TextAlign.left,
+                            ),
+                          ),
+                        ]),
+                      ),
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                            Padding(
                             padding: EdgeInsets.symmetric(vertical: 10,horizontal: 15),
                             child: Container(
                               alignment: Alignment.topLeft,
@@ -2152,18 +2374,24 @@ class _StartAssessmentState extends State<StartAssessment> {
                                     onPressed: () async {
                                       
                                       getPermision(Permission.camera);
-                                      //CameraCapture();
+                                      
                                       String docDirectory = await AppUtils.getDocumentPath();
                                       await ImagePicker.pickVideo(source: ImageSource.camera).then((File videoFile) async {
+
+                                      setState(() {
+                                        _isLoading = true;
+                                      });
                                       if (videoFile != null && mounted) {
+                                        String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
                                         if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
-                                          final file = new File('$docDirectory/${this.currentAssessmentTask.assessmentTaskLocalFile}');
+                                          
+                                          final file = new File('$docDirectory/$taskFolder/${this.currentAssessmentTask.assessmentTaskLocalFile}');
                                           if (await file.exists()){
                                               await file.delete();
                                               this.currentAssessmentTask.assessmentTaskLocalFile = '';
                                           }
                                         }
-                                        String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
+                                        
                                         
                                         await AppUtils.getCreateFolder(taskFolder);
                                         //String pathFolder = await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
@@ -2177,29 +2405,13 @@ class _StartAssessmentState extends State<StartAssessment> {
 
                                         String fileFullPath = '$docDirectory/$filePath'; 
                                         var res2 = await videoFile.copy(fileFullPath);
-                                        print('res2 >> $res2');
+                                        AppUtils.onPrintLog('res2 >> $res2');
+                                        //videoFile.delete();
 
-                                        //if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
-                                        
-                                        final file = new File(fileFullPath);
-                                        final _flutterVideoCompress = FlutterVideoCompress();
-                                        
-                                        final info = await _flutterVideoCompress.compressVideo(
-                                          file.path,
-                                          quality: VideoQuality.MediumQuality, // default(VideoQuality.DefaultQuality)
-                                          deleteOrigin: false, // default(false)
-                                        );
-
-                                        _subscription = _flutterVideoCompress.compressProgress$.subscribe((progress) {
-                                          debugPrint('progress: $progress');
-                                          if(progress == 100){
-                                            info.file.copy('$docDirectory/$filePath');
-                                            print('info >> $info');
-                                            setState(() {
-                                                this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
-                                                this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
-                                            });
-                                          }
+                                        setState(() {
+                                          this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
+                                          this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+                                           _isLoading = false;
                                         });
                                       }
                                     });
@@ -2216,7 +2428,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                       style: TextStyle(
                                         color: ThemeColor.theme_dark,
                                         fontFamily: ThemeFont.font_pourceSanPro,
-                                        fontSize: 30.0,
+                                        fontSize: 12.0,
                                         fontWeight: FontWeight.bold
                                       ),
                                       textAlign: TextAlign.center,
@@ -2226,12 +2438,6 @@ class _StartAssessmentState extends State<StartAssessment> {
                               ),
                             ),
                           ),
-                          
-                        ]),
-                      ),
-                      SliverList(
-                        delegate: SliverChildListDelegate(
-                          [
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 10),
 
@@ -2261,7 +2467,8 @@ class _StartAssessmentState extends State<StartAssessment> {
                                           fontWeight: FontWeight.bold
                                         ),
                                         textAlign: TextAlign.center,
-                                      ),)
+                                      ),),
+                                      _isLoading?_showCircularProgress():SizedBox()
                                     ],
                                   ),
                                 ):
@@ -2274,10 +2481,10 @@ class _StartAssessmentState extends State<StartAssessment> {
                                         decoration: BoxDecoration(
                                           color: Colors.white
                                         ),
-                                        
                                       ),
                                       Center(
                                         child: customVideoPlayer(url:this.currentAssessmentTask.assessmentTaskLocalFile,isLocal: true)
+                                        
                                       )
                                     ],
                                   ),
@@ -2367,6 +2574,349 @@ class _StartAssessmentState extends State<StartAssessment> {
       
     );
   }
+
+// Get Camera redord view
+Widget getCameraRecorder() {
+    return Container(
+        height: 300,
+        alignment: Alignment.topLeft,
+        padding: EdgeInsets.symmetric(horizontal: 10,vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 0),
+              child: Container(
+                alignment: Alignment.topLeft,
+                decoration: BoxDecoration(
+                ),
+                child: Row(
+                  children: <Widget>[
+                    IconButton(
+                      icon: Image.asset(ThemeImage.image_camera),
+                      onPressed: () async {
+                        
+                        getPermision(Permission.camera);
+                        
+                        String docDirectory = await AppUtils.getDocumentPath();
+                        await ImagePicker.pickVideo(source: ImageSource.camera).then((File videoFile) async {
+                            if (videoFile != null && mounted) {
+                            _isLoading = true;
+                            _loadingStreamController.sink.add(true);
+                            
+                            String taskFolder = await AppUtils.getAssessmentPath(this.currentAssessmentUuid);
+                            if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
+                              
+                              final file = new File('$docDirectory/$taskFolder/${this.currentAssessmentTask.assessmentTaskLocalFile}');
+                              if (await file.exists()){
+                                  await file.delete();
+                                  this.currentAssessmentTask.assessmentTaskLocalFile = '';
+                              }
+                            }
+                            
+                            await AppUtils.getCreateFolder(taskFolder);
+                            //String pathFolder = await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
+                            String fileExtesion = 'mp4';
+                            if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
+                                List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
+                                fileExtesion = arrExtention.first;
+                            } 
+                            final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+                            final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+
+                            String fileFullPath = '$docDirectory/$filePath'; 
+
+                            //_loadingStreamCtrl.sink.add(true);
+                            _isMaxDuration = await isMaxVideoDuaration(videoFile);
+                            _isLoading = false;
+                            if(_isMaxDuration == false){
+                                final info = await videoCompresor(videoFile);
+                                AppUtils.onPrintLog('info 11>> $info');
+                                 if(info != null && info.file != null){
+                                  //await _file.delete();
+                                  await info.file.copy(fileFullPath);
+                                  if(_videoPlayerController != null){
+                                    //_videoPlayerController.dispose();
+                                    //_videoPlayerController = null;
+                                  }
+
+                                  if(_chewieController != null){
+                                    //_chewieController.dispose();
+                                    //_chewieController = null;
+                                  }
+                                  
+                                 //videoFile.copy(fileFullPath);
+                                  File compressFile = File(fileFullPath);
+                                  AppUtils.onPrintLog('compressFile >> $compressFile');
+                                    //_subscription.unsubscribe();
+                                   _videoPlayerController =  VideoPlayerController.file(compressFile)..setVolume(1.0);
+                                  _chewieController =  ChewieController(
+                                    videoPlayerController: _videoPlayerController,
+                                    //aspectRatio: 3 / 2,
+                                    autoPlay: false,
+                                    looping: false,
+                                    showControls: true,
+                                    materialProgressColors: ChewieProgressColors(
+                                      playedColor: ThemeColor.theme_blue,
+                                      handleColor: ThemeColor.theme_dark,
+                                      backgroundColor: Colors.grey,
+                                      bufferedColor: Colors.lightGreen,
+                                    ),
+                                    placeholder: Container(
+                                      color: Colors.white,
+                                    ),
+                                    autoInitialize: true,
+                                    routePageBuilder: (BuildContext context, Animation<double> animation,
+                                        Animation<double> secondAnimation, provider) {
+                                      return AnimatedBuilder(
+                                        animation: animation,
+                                        builder: (BuildContext context, Widget child) {
+                                          return VideoScaffold2(
+                                            child: Scaffold(
+                                              resizeToAvoidBottomPadding: false,
+                                              body: Container(
+                                                alignment: Alignment.center,
+                                                color: Colors.black,
+                                                child: provider,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }
+                                    // Try playing around with some of these other options:
+                                  );
+                                  this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
+                                  this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
+                                  _loadingStreamController.sink.add(false);
+                                } else {
+                                  _loadingStreamController.sink.add(false);
+                                }
+                                
+                            } else {
+                              _loadingStreamController.sink.add(false);
+                            }
+                          }
+                        });
+                      },
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 15),
+                      child: Text(
+                        'Maximum 2 minitues of video recroding allow',
+                        style: TextStyle(
+                          color: ThemeColor.theme_dark,
+                          fontFamily: ThemeFont.font_pourceSanPro,
+                          fontSize: 12.0,
+                          fontWeight: FontWeight.bold
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  ],
+                ),
+              ),
+                          
+            ),
+            StreamBuilder(
+              stream: _loadingStreamController.stream,
+              builder: (context,AsyncSnapshot<bool> snapshot){
+                if(snapshot.hasData){
+                  if(snapshot.data == true){
+                     return ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: 100
+
+                      ),
+                      child :Container(
+                      padding: EdgeInsets.symmetric(horizontal: 5),
+                      height: 200,
+                      child: Stack(
+                        children: <Widget>[
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey
+                            ),
+                            
+                          ),
+                          Center(child: Text(
+                            'Video',
+                            style: TextStyle(
+                              color: ThemeColor.theme_dark,
+                              fontFamily: ThemeFont.font_pourceSanPro,
+                              fontSize: 30.0,
+                              fontWeight: FontWeight.bold
+                            ),
+                            textAlign: TextAlign.center,
+                          ),),
+                          _isLoading?_showCircularProgress():SizedBox()
+                        ],
+                      ),
+                    ));
+                  } else {
+                    if(_isMaxDuration == true){
+                      return ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: 100
+                      ),
+                      child :Center(
+                        child: Text(
+                          'Maximum 2 minitues of video recroding allow',
+                          style: TextStyle(
+                            color: ThemeColor.theme_dark,
+                            fontFamily: ThemeFont.font_pourceSanPro,
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.bold
+                          ),
+                          textAlign: TextAlign.center,
+                        )
+                      ));
+                    } else {
+                      if(_chewieController != null){
+                        return Container(
+                          //padding: EdgeInsets.symmetric(horizontal: 10,vertical: 5),
+                          child: Expanded(
+                            child: Center(
+                              child: Chewie(
+                                controller: _chewieController,
+                              ),
+                            ),
+                          ),
+                        );
+                      } else {
+                        return ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: 200
+                          ),
+                          child :Center(
+                            child: Text(
+                              'Somthing went wrong. Please try again',
+                              style: TextStyle(
+                                color: ThemeColor.theme_dark,
+                                fontFamily: ThemeFont.font_pourceSanPro,
+                                fontSize: 20.0,
+                                fontWeight: FontWeight.bold
+                              ),
+                              textAlign: TextAlign.center,
+                            )
+                          )
+                        );
+                      }
+                    }
+                  }
+                } else {
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 5),
+                    height: 200,
+                    child: Stack(
+                      children: <Widget>[
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey
+                          ),
+                          
+                        ),
+                        Center(child: Text(
+                          'Video',
+                          style: TextStyle(
+                            color: ThemeColor.theme_dark,
+                            fontFamily: ThemeFont.font_pourceSanPro,
+                            fontSize: 30.0,
+                            fontWeight: FontWeight.bold
+                          ),
+                          textAlign: TextAlign.center,
+                        ),),
+                        _isLoading?_showCircularProgress():SizedBox()
+                      ],
+                    ),
+                  );
+                }
+
+              },
+            )
+          ],
+        ),
+      );
+    
+    
+  }
+
+  
+
+  isMaxVideoDuaration(File file) async{
+    if(file != null){
+      final info = await _flutterVideoCompress.getMediaInfo(file.path);
+      double duration = info.duration;
+      AppUtils.onPrintLog('duration >> $duration');
+      AppUtils.onPrintLog('maxDuration >> ${AppUtils.maxVideoDuration}');
+      if(duration > AppUtils.maxVideoDuration){
+        AppUtils.onPrintLog('return >> true');
+      return true;
+      } else {
+        AppUtils.onPrintLog('return >> false');
+        return false;
+      }
+    }else{
+      return true;
+    }
+  }
+
+  videoCompresor(File file) async{
+    final info = await _flutterVideoCompress.compressVideo(
+      file.path,
+      quality: VideoQuality.MediumQuality, // default(VideoQuality.DefaultQuality)
+      deleteOrigin: false, // default(false)
+    );
+
+    if(info != null && info.file != null){
+      return info;
+    } else {
+      videoCompresor(file);
+    }
+  } 
+
+  
+  
 }
 
+
+class VideoScaffold2 extends StatefulWidget {
+  const VideoScaffold2({Key key, this.child}) : super(key: key);
+
+  final Widget child;
+
+  @override
+  State<StatefulWidget> createState() => _VideoScaffold2State();
+}
+
+class _VideoScaffold2State extends State<VideoScaffold2> {
+  @override
+  void initState() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+    AutoOrientation.landscapeMode();
+    super.initState();
+  }
+
+  @override
+  dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    AutoOrientation.portraitMode();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
+}
 

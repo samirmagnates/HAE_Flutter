@@ -98,7 +98,7 @@ class _ResultScreenState extends State<ResultScreen> {
             onPressed: () async {
               try {
               } catch (e){
-                print('back res >>> ${e.toString()}');
+                AppUtils.onPrintLog('back res >>> ${e.toString()}');
               }
               AppUtils.onPrintLog("pop  >> 8");
               Navigator.pop(context);

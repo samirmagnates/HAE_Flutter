@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 class AppUtils{
     
+    static double maxVideoDuration = 120000.00;
     static Future getAppUserToken() async{
     var user = await SharedPreferencesManager.getObject(AppKey.appuser);
 
@@ -40,7 +41,7 @@ class AppUtils{
     }
 
     static void onPrintLog(object){
-      print(object);
+      //print(object);
     }
 
     static String getCurrentYear(){
@@ -95,7 +96,7 @@ class AppUtils{
     static Future<String> getCreateFolder(String path) async{
       final String appDirectory = await getDocumentPath();
 
-      print('appDirectory >> $appDirectory');
+      AppUtils.onPrintLog('appDirectory >> $appDirectory');
       //final String folderPath  = await getTaskPath(folderName);
       final String directory = '$appDirectory/$path';
       await Directory(directory).create(recursive: true);
@@ -108,9 +109,9 @@ class AppUtils{
       final String directory = '$appDirectory/$path';
       try {
         var res = await Directory(directory).delete(recursive: true);
-         print('res >>> $res');
+         AppUtils.onPrintLog('res >>> $res');
       } catch (e){
-         print('res >>> ${e.toString()}');
+         AppUtils.onPrintLog('res >>> ${e.toString()}');
       }
     }
 
@@ -171,6 +172,7 @@ class ThemeImage{
     static const image_camera = "assets/images/camera.png";
     static const image_mic = "assets/images/Audio_record.png";
     static const image_rerecord = "assets/images/rerecord.png";
+    static const image_edit = "assets/images/edit.png";
     
 
 }

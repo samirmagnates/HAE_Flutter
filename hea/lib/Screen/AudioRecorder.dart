@@ -111,17 +111,17 @@ Future _startRecord() async {
       setState(() {
         isRecord = true;
       });
-      print('startRecord: ' + result);
+      AppUtils.onPrintLog('startRecord: ' + result);
     } catch (e) {
       file = "";
-      print('startRecord: fail >> ${e.toString()}');
+      AppUtils.onPrintLog('startRecord: fail >> ${e.toString()}');
     }*/
     try {
 
       appDocumentPath = await AppUtils.getDocumentPath();
       this.file = '$appDocumentPath/$filepath';
       String path = await flutterSound.startRecorder(this.file);
-      print('startRecorder: $path');
+      AppUtils.onPrintLog('startRecorder: $path');
 
       _recorderSubscription = flutterSound.onRecorderStateChanged.listen((e) {
         /*DateTime date = new DateTime.fromMillisecondsSinceEpoch(
@@ -137,7 +137,7 @@ Future _startRecord() async {
       });
       _dbPeakSubscription =
           flutterSound.onRecorderDbPeakChanged.listen((value) {
-            print("got update -> $value");
+            AppUtils.onPrintLog("got update -> $value");
             setState(() {
               this._dbLevel = value;
             });
@@ -147,27 +147,27 @@ Future _startRecord() async {
         this._isRecording = true;
       });
     } catch (err) {
-      print('startRecorder error: $err');
+      AppUtils.onPrintLog('startRecorder error: $err');
     }
   }
 
   Future _stopRecord() async {
     /*try {
       final String result = await audioModule.stopRecord();
-      print('stopRecord: ' + result);
+      AppUtils.onPrintLog('stopRecord: ' + result);
       setState(() {
         isRecord = false;
         isAlredyRecorde = true;
       });
     } catch (e) {
-      print('stopRecord: fail');
+      AppUtils.onPrintLog('stopRecord: fail');
       setState(() {
         isRecord = false;
       });
     }*/
     try {
       String result = await flutterSound.stopRecorder();
-      print('stopRecorder: $result');
+      AppUtils.onPrintLog('stopRecorder: $result');
 
       if (_recorderSubscription != null) {
         _recorderSubscription.cancel();
@@ -183,7 +183,7 @@ Future _startRecord() async {
         this.isAlredyRecorde = true;
       });
     } catch (err) {
-      print('stopRecorder error: $err');
+      AppUtils.onPrintLog('stopRecorder error: $err');
     }
   }
 
@@ -198,7 +198,7 @@ Future _startRecord() async {
     }*/
     String path = await flutterSound.startPlayer(this.file);
     await flutterSound.setVolume(1.0);
-    print('startPlayer: $path');
+    AppUtils.onPrintLog('startPlayer: $path');
     try {
       _playerSubscription = flutterSound.onPlayerStateChanged.listen((e) {
         if (e != null) {
@@ -224,7 +224,7 @@ Future _startRecord() async {
         }
       });
     } catch (err) {
-      print('error: $err');
+      AppUtils.onPrintLog('error: $err');
     }
   }
 
@@ -241,7 +241,7 @@ Future _startRecord() async {
   void stopPlayer() async{
     try {
       String result = await flutterSound.stopPlayer();
-      print('stopPlayer: $result');
+      AppUtils.onPrintLog('stopPlayer: $result');
       if (_playerSubscription != null) {
         _playerSubscription.cancel();
         _playerSubscription = null;
@@ -251,23 +251,23 @@ Future _startRecord() async {
         this._isPlaying = false;
       });
     } catch (err) {
-      print('error: $err');
+      AppUtils.onPrintLog('error: $err');
     }
   }
 
   void pausePlayer() async{
     String result = await flutterSound.pausePlayer();
-    print('pausePlayer: $result');
+    AppUtils.onPrintLog('pausePlayer: $result');
   }
 
   void resumePlayer() async{
     String result = await flutterSound.resumePlayer();
-    print('resumePlayer: $result');
+    AppUtils.onPrintLog('resumePlayer: $result');
   }
 
   void seekToPlayer(int milliSecs) async{
     String result = await flutterSound.seekToPlayer(milliSecs);
-    print('seekToPlayer: $result');
+    AppUtils.onPrintLog('seekToPlayer: $result');
   }
 
   /*void _onEvent(dynamic event) {
@@ -283,7 +283,7 @@ Future _startRecord() async {
     }
     if (event['code'] == 'playing') {
       String url = event['url'];
-      print('url >>> $url');
+      AppUtils.onPrintLog('url >>> $url');
       setState(() {
         playPosition = event['currentTime'];
         fileDuration = event['duration'];

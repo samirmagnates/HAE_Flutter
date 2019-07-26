@@ -54,15 +54,15 @@ class APIManager {
         try {
           jsonData = json.decode(response.body);
         } on FormatException catch (e) {
-          print("That string didn't look like Json. >>> $e");
+          AppUtils.onPrintLog("That string didn't look like Json. >>> $e");
         } on NoSuchMethodError catch (e) {
-          print('That string was null! >>> $e');
+          AppUtils.onPrintLog('That string was null! >>> $e');
         }
     } on TimeoutException catch (e){
-      print("TimeoutException. >>> $e");
+      AppUtils.onPrintLog("TimeoutException. >>> $e");
 
     } on SocketException catch(e){
-      print("SocketException. >>> $e");
+      AppUtils.onPrintLog("SocketException. >>> $e");
 
     }
     return jsonData;

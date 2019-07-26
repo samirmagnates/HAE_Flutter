@@ -163,7 +163,7 @@ class DBManager{
     getAssessements(String assessment_uuid,String assessor_uuid) async {
       final db = await database;
       List<Map> list = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_assessments} WHERE ${AppDatabase.tbl_assessments_field_assessment_uuid} = ? AND ${AppDatabase.tbl_assessments_field_assessor_uuid} = ?',['$assessment_uuid','$assessor_uuid']);
-      print('list >> $list');
+      AppUtils.onPrintLog('list >> $list');
       return list.isNotEmpty ? Assessment.fromJSON(list.first) : null;
     }
     
@@ -213,7 +213,7 @@ class DBManager{
     getAssessementsMetaData(String assessment_uuid,String assessor_uuid) async {
       final db = await database;
       List<Map> list = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_assessment_meta} WHERE ${AppDatabase.tbl_assessment_meta_field_assessment_uuid} = ? AND ${AppDatabase.tbl_assessment_meta_field_assessor_uuid} = ?',['$assessment_uuid','$assessor_uuid']);
-      print('list >> $list');
+      AppUtils.onPrintLog('list >> $list');
       return list.isNotEmpty ? AssessmentMetaData.fromJSON(list.first) : null;
       
     }
@@ -257,10 +257,10 @@ class DBManager{
         // var res = await db.rawInsert(
         //   "INSERT INTO ${AppDatabase.tbl_name_tasks} (${AppDatabase.tbl_tasks_field_assessment_task_uuid},${AppDatabase.tbl_tasks_field_assessment_task_type},${AppDatabase.tbl_tasks_field_score},${AppDatabase.tbl_tasks_field_prompt},${AppDatabase.tbl_tasks_field_result},${AppDatabase.tbl_tasks_field_responses},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_id},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_id},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_text},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_text},${AppDatabase.tbl_tasks_field_assessment_task_asset_url},${AppDatabase.tbl_tasks_field_assessment_task_upload_format},${AppDatabase.tbl_tasks_field_assessment_task_local_file},${AppDatabase.tbl_tasks_field_assessment_uuid},${AppDatabase.tbl_tasks_field_assessor_uuid})"
         //   " VALUES ('$assessmentTaskUuid','$assessmentTaskType','$assessmentTaskCorrectResponseId','$assessmentTaskAnswerIdResponseId','$assessmentTaskCorrectResponseText','$assessmentTaskAnswerResponseText','$assessmentTaskAssetUrl','$score','$prompt','$result','$responses','$assessmentTaskUploadFormat','$assessmentTaskLocalFile','$assessmentUuid','$assessorUuid')");
-        //    print('inserted1: $res');
+        //    AppUtils.onPrintLog('inserted1: $res');
 
         var res = await db.rawInsert('INSERT INTO ${AppDatabase.tbl_name_tasks} (${AppDatabase.tbl_tasks_field_assessment_task_uuid},${AppDatabase.tbl_tasks_field_assessment_task_type},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_id},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_id},${AppDatabase.tbl_tasks_field_assessment_task_correct_response_text},${AppDatabase.tbl_tasks_field_assessment_task_answer_response_text},${AppDatabase.tbl_tasks_field_assessment_task_asset_url},${AppDatabase.tbl_tasks_field_score},${AppDatabase.tbl_tasks_field_prompt},${AppDatabase.tbl_tasks_field_result},${AppDatabase.tbl_tasks_field_responses},${AppDatabase.tbl_tasks_field_assessment_task_upload_format},${AppDatabase.tbl_tasks_field_assessment_task_local_file},${AppDatabase.tbl_tasks_field_assessment_uuid},${AppDatabase.tbl_tasks_field_assessor_uuid}) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',[assessmentTaskUuid,assessmentTaskType,assessmentTaskCorrectResponseId,assessmentTaskAnswerIdResponseId,assessmentTaskCorrectResponseText,assessmentTaskAnswerResponseText,assessmentTaskAssetUrl,score,prompt,result,responses,assessmentTaskUploadFormat,assessmentTaskLocalFile,assessmentUuid,assessorUuid]);
-        print('inserted1: $res');
+        AppUtils.onPrintLog('inserted1: $res');
         return res;
 
     }
@@ -274,7 +274,7 @@ class DBManager{
     getAssessementsTask(String taskUuid,String assessmentUuid,String assessorUuid) async {
       final db = await database;
       List<Map> list = await db.rawQuery('SELECT * FROM ${AppDatabase.tbl_name_tasks} WHERE ${AppDatabase.tbl_tasks_field_assessment_task_uuid} = ? AND ${AppDatabase.tbl_tasks_field_assessment_uuid} = ? AND ${AppDatabase.tbl_tasks_field_assessor_uuid} = ?',['$taskUuid','$assessmentUuid','$assessorUuid']);
-      print('list >> $list');
+      AppUtils.onPrintLog('list >> $list');
       return list.isNotEmpty ? AssessmentTasks.fromJSON(list.first) : null;
       
     }

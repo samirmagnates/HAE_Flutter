@@ -1127,7 +1127,7 @@ class _HomeState extends State<Home> {
             final File file =  File(fileFullPath);
             String fileName = path.basename(file.path);
             int fileSize = await getFileSize(fileFullPath);
-            print('File fileSize-->$fileSize');
+            AppUtils.onPrintLog('File fileSize-->$fileSize');
             
             Map<String,dynamic> file_info = Map<String,dynamic>();
             file_info['assessment_task_uuid'] = task.assessmentTaskUuid;
@@ -1460,18 +1460,18 @@ class _HomeState extends State<Home> {
     }
 
     getFileSize(String path) async {
-      print('File path-->$path');
+      AppUtils.onPrintLog('File path-->$path');
       File file =  File('$path');
       var isExist = await file.exists();
       if (isExist) {
-        print('File exists------------------>_getLocalFile()');
+        AppUtils.onPrintLog('File exists------------------>_getLocalFile()');
         return await file.length().then((onValue){
-        print('onValue -->$onValue');
+        AppUtils.onPrintLog('onValue -->$onValue');
         return onValue;
       });
         //return 'exist';
       } else {
-        print('file does not exist---------->_getLocalFile()');  
+        AppUtils.onPrintLog('file does not exist---------->_getLocalFile()');  
         return '';
       }
     }
@@ -1530,8 +1530,8 @@ class _HomeState extends State<Home> {
                   List<AssessmentTasks> list = await DBManager.db.getAllAssessementsTasks(this.assessmentSelected.ASSESSMENT_UUID, this.assessmentSelected.ASSESSOR_UUID);
 
                   list.forEach((task){
-                      print('task >> $task');
-                      print('task questions >>${task.prompt}');
+                      AppUtils.onPrintLog('task >> $task');
+                      AppUtils.onPrintLog('task questions >>${task.prompt}');
                   });
 
                   setState((){
@@ -1617,7 +1617,7 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
   void didChangeDependencies() {
     // TODO: implement didChangeDependencies
     super.didChangeDependencies();
-    print('didChangeDependencies');
+    AppUtils.onPrintLog('didChangeDependencies');
 
   }
 
@@ -1625,7 +1625,7 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
   void didUpdateWidget(SearchCandidateView oldWidget) {
     // TODO: implement didUpdateWidget
     super.didUpdateWidget(oldWidget);
-    print('didUpdateWidget');
+    AppUtils.onPrintLog('didUpdateWidget');
   }
 
   @override
@@ -1682,8 +1682,8 @@ class _SearchCandidateViewState extends State<SearchCandidateView> {
 
       Assessment assessment = this.arrSearch[index];
       bool isSelectedAssessment = false;
-      print('widget.currentCandidate.ASSESSMENT_ID >> ${widget.currentAssessment.ASSESSMENT_ID}');
-      print('assessment.ASSESSMENT_ID >> ${assessment.ASSESSMENT_ID}');
+      AppUtils.onPrintLog('widget.currentCandidate.ASSESSMENT_ID >> ${widget.currentAssessment.ASSESSMENT_ID}');
+      AppUtils.onPrintLog('assessment.ASSESSMENT_ID >> ${assessment.ASSESSMENT_ID}');
       if(widget.currentAssessment.ASSESSMENT_ID == assessment.ASSESSMENT_ID){
         isSelectedAssessment = true;
       }
