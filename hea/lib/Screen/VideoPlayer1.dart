@@ -116,15 +116,16 @@ class _VideoPlayer1State extends State<VideoPlayer1> {
                               }
                             }
                             
-                            await AppUtils.getCreateFolder(taskFolder);
+                            //await AppUtils.getCreateFolder(taskFolder);
                             //String pathFolder = await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
                             String fileExtesion = 'mp4';
                             if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
                                 List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
                                 fileExtesion = arrExtention.first;
                             } 
-                            final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
-                            final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+                            //final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+                            //final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+                            final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}.$fileExtesion';
 
                             String fileFullPath = '$docDirectory/$filePath'; 
 
@@ -137,6 +138,8 @@ class _VideoPlayer1State extends State<VideoPlayer1> {
                                  if(info != null && info.file != null){
                                   //await _file.delete();
                                   await info.file.copy(fileFullPath);
+                                  await info.file.delete();
+                                  await videoFile.delete();
                                   if(_videoPlayerController != null){
                                     _videoPlayerController.dispose();
                                     _videoPlayerController = null;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hea/Utils/AppUtils.dart';
+import '../Utils/AppUtils.dart';
 import 'package:flutter/rendering.dart';
-import 'package:hea/Utils/apimanager.dart';
-import 'package:hea/Utils/SharedPreferences.dart';
+import '../Utils/apimanager.dart';
+import '../Utils/SharedPreferences.dart';
 class Login extends StatefulWidget {
   @override
   _LoginState createState() => _LoginState();
@@ -35,7 +35,7 @@ class _LoginState extends State<Login> {
 
   var message = AppMessage.kError_SomethingWentWrong;
 
-
+  bool _obscureText = true;
   @override
     void initState(){
         super.initState();
@@ -438,7 +438,7 @@ class _LoginState extends State<Login> {
                         child: TextFormField(
                                 key: _passwordKey,
                                 controller: txtPass,
-                                obscureText: true,
+                                obscureText: _obscureText,
                                 textAlign: TextAlign.left,
                                 focusNode: _focusNodePass,
                                 textInputAction: TextInputAction.done,
@@ -455,10 +455,19 @@ class _LoginState extends State<Login> {
                                 decoration: InputDecoration(
                                   hintText: AppConstant.kHint_SecurePassword,
                                   hintStyle: TextStyle(color: Colors.grey),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscureText?Icons.visibility_off:Icons.visibility,
+                                      color: ThemeColor.theme_blue,),
+                                    onPressed: (){
+                                      setState(() {
+                                          _obscureText = !_obscureText;
+                                      });
+                                    }, 
+                                  ),
                                 ),
                               ),
                       ),
-                      
                       SizedBox(
                         height: 24.0,
                       ),

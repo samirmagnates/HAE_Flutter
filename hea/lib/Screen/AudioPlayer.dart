@@ -1,7 +1,9 @@
+
+
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:audioplayer/audioplayer.dart';
 import 'package:flutter/material.dart';
 import 'package:hea/Utils/AppUtils.dart';
@@ -11,6 +13,14 @@ import 'package:path/path.dart' as path;
 typedef void OnError(Exception exception);
 
 enum PlayerState { stopped, playing, paused }
+
+/*
+  Audio Player class is use to play audio file from local or server url;
+  Parameters :
+    url : server or local url for audio file. This url recevice form class which call CustomAudioPlayer constructor.
+    assessmentUuid : assessmentUuid is unique id of assessment use to find local folder having name assessmentUuid
+
+*/
 
 class CustomAudioPlayer extends StatefulWidget {
   @override
@@ -25,9 +35,7 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
 
   Duration duration;
   Duration position;
-
   AudioPlayer audioPlayer;
-
   String localFilePath;
   PlayerState playerState = PlayerState.stopped;
   get isPlaying => playerState == PlayerState.playing;
@@ -64,7 +72,12 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
     _audioPlayerStateSubscription.cancel();
     audioPlayer.stop();
   }
+  /*
+    initAudioPlayer is init Audioplaye using url
+    set subscriber for audioposition change is for fast forward using slider 
+    set duration parameter if running and if stope than set to begining.
 
+  */
   Future initAudioPlayer() async{
     audioPlayer = new AudioPlayer();
     _positionSubscription = audioPlayer.onAudioPositionChanged.listen((p) => setState(() => position = p));
@@ -89,6 +102,9 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
     });
   }
 
+  /*
+    play is use to play audion and change status to playing.
+  */
   Future play() async {
     try{
       //await audioPlayer.play(audioURL);
@@ -106,16 +122,22 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
     });
   }
 
-  Future _playLocal() async {
+  /*Future _playLocal() async {
     await audioPlayer.play(localFilePath, isLocal: true);
     setState(() => playerState = PlayerState.playing);
-  }
+  }*/
 
+  /*
+    pause is use to pause audion and change status to paused.
+  */
   Future pause() async {
     await audioPlayer.pause();
     setState(() => playerState = PlayerState.paused);
   }
 
+  /*
+    stop is use to stop audio and change status to stopped and reset duration parameter.
+  */
   Future stop() async {
     await audioPlayer.stop();
     setState(() {
@@ -131,6 +153,11 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
     });
   }
 
+  /*
+    this method is called when audio end
+    change status to stopped
+    reset position duration set to 0
+  */
   void onComplete() {
     setState(() {
       playerState = PlayerState.stopped;
@@ -139,6 +166,9 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
     //stop();
     //setState(() => playerState = PlayerState.stopped);
   }
+  /*
+      _loadFileBytes is use to download audio file for server using url and add to app local storage.
+  */
 
   Future<Uint8List> _loadFileBytes(String url, {OnError onError}) async {
     Uint8List bytes;
@@ -153,6 +183,10 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
     return bytes;
   }
 
+  /*
+    _loadFile use to get file from local storage
+    if file not exits in local than call _loadFileBytes function to download file from server using url.
+  */
   Future _loadFile() async {
 
       try{
@@ -162,7 +196,7 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
         
         String taskFolder = await AppUtils.getAssessmentPath(widget.assessmentUuid);
         String docDirectory = await AppUtils.getDocumentPath();
-        await AppUtils.getCreateFolder(taskFolder);
+        //await AppUtils.getCreateFolder(taskFolder);
 
         //String pathFolder = await AppUtils.getLocalPath(widget.taskUuid);
         final file = new File('$docDirectory/$taskFolder/audio${path.extension(audioURL)}');
@@ -213,6 +247,15 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
             )));
   }
 
+  /*
+   * _buildPlayer return audio player ui 
+   *  ui  
+   *   text current duration : use to show current duration of audio
+   *   text duration : show audio file duration
+   *   slider : slider move as per current dutation 
+   *    button paly/pause : use to play or stop audio 
+   */
+
   Widget _buildPlayer() => new Container(
       padding: new EdgeInsets.all(16.0),
       child : duration == null || isError == true
@@ -232,23 +275,6 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
         :Stack(
         children: <Widget>[
           Column(mainAxisSize: MainAxisSize.min, children: [
-            /*new Row(mainAxisSize: MainAxisSize.min, children: [
-              new IconButton(
-                  onPressed: isPlaying ? null : () => play(),
-                  iconSize: 64.0,
-                  icon: new Icon(Icons.play_arrow),
-                  color: Colors.cyan),
-              new IconButton(
-                  onPressed: isPlaying ? () => pause() : null,
-                  iconSize: 64.0,
-                  icon: new Icon(Icons.pause),
-                  color: Colors.cyan),
-              new IconButton(
-                  onPressed: isPlaying || isPaused ? () => stop() : null,
-                  iconSize: 64.0,
-                  icon: new Icon(Icons.stop),
-                  color: Colors.cyan),
-            ]),*/
             duration == null || isError == true
                 ? new Container(
                     child: Center(
@@ -313,38 +339,9 @@ class _CustomAudioPlayerState extends State<CustomAudioPlayer> {
                   iconSize: 100.0,
                   icon: isPlaying?Image.asset(ThemeImage.image_pause):Image.asset(ThemeImage.image_play),
                   color: Colors.cyan),
-                /*new IconButton(
-                    onPressed: () => mute(true),
-                    icon: new Icon(Icons.headset_off),
-                    color: Colors.cyan),
-                new IconButton(
-                    onPressed: () => mute(false),
-                    icon: new Icon(Icons.headset),
-                    color: Colors.cyan),*/
+                
               ],
             ),
-            /*new Row(mainAxisSize: MainAxisSize.min, children: [
-              new Padding(
-                  padding: new EdgeInsets.all(12.0),
-                  child: new Stack(children: [
-                    new CircularProgressIndicator(
-                        value: 1.0,
-                        valueColor: new AlwaysStoppedAnimation(Colors.grey[300])),
-                    new CircularProgressIndicator(
-                      value: position != null && position.inMilliseconds > 0
-                          ? (position?.inMilliseconds?.toDouble() ?? 0.0) /
-                              (duration?.inMilliseconds?.toDouble() ?? 0.0)
-                          : 0.0,
-                      valueColor: new AlwaysStoppedAnimation(Colors.cyan),
-                      backgroundColor: Colors.yellow,
-                    ),
-                  ])),
-              new Text(
-                  position != null
-                      ? "${positionText ?? ''} / ${durationText ?? ''}"
-                      : duration != null ? durationText : '',
-                  style: new TextStyle(fontSize: 24.0))
-            ])*/
           ]),
           isDownloading?AppUtils.onShowLoder() : SizedBox(height: 0.0, width: 0.0,),
         ],

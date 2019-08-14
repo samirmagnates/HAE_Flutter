@@ -38,14 +38,17 @@ class APIManager {
       //requestHeaders[HttpHeaders.contentTypeHeader] = 'text/plain';
       requestBody = body[AppKey.param_rawJson];
       url = url+'manifest/upload/';
-    } else {
+    } else if(method == APIMathods.uploadAssessment){
+      url = url+method+'/';
+      requestBody =  jsonEncode(body);
+    }else {
       url = url+method+'/';
       requestBody = body;
       //requestHeaders[HttpHeaders.contentTypeHeader] = 'application/json';
     }
 
      AppUtils.onPrintLog("$method >>> $requestBody");
-    
+      
     var jsonData;
     try{
         var response = await http.post(url,body: requestBody,headers: requestHeaders);

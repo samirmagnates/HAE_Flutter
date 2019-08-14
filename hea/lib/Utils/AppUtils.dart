@@ -1,10 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:hea/Utils/SharedPreferences.dart';
-import 'package:hea/Utils/connectivity.dart';
-import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+
+import 'SharedPreferences.dart';
+import 'connectivity.dart';
 class AppUtils{
     
     static double maxVideoDuration = 120000.00;
@@ -41,7 +43,7 @@ class AppUtils{
     }
 
     static void onPrintLog(object){
-      //print(object);
+      print(object);
     }
 
     static String getCurrentYear(){
@@ -173,6 +175,9 @@ class ThemeImage{
     static const image_mic = "assets/images/Audio_record.png";
     static const image_rerecord = "assets/images/rerecord.png";
     static const image_edit = "assets/images/edit.png";
+    static const eyeOpen = "assets/images/eye.png";
+    static const eyeClose = "assets/images/eye-closed.png";
+    static const eyeClose1 = "assets/images/eyeclose.png";
     
 
 }
@@ -198,6 +203,11 @@ class AppMessage{
     static const String kError_Download = 'Need to Download assessment first!';
     static const String kError_DownloadAlready = 'Assessment already downloaded!';
     static const String kError_UploadedAlready = 'Assessment already uploaded!';
+    static const String kError_UploadedSuccess = 'Assessment upload successfully!';
+
+    static const String kError_captureImage = 'Please capture image!';
+    static const String kError_recoredAudio = 'Please record audio or stop audio recorder!';
+    static const String kError_recoredVideo = 'Please record video!';
 }
 
 class AppRoute{
@@ -252,9 +262,12 @@ class AppKey {
   static const String param_assessment_result = 'assessment_result';
   static const String param_assessment_obtainmark = 'assessment_obtainmark';
   static const String param_assessment_data = 'assessment_data';
+  static const String param_assessor_comment = 'assessor_comment';
   static const String key_isContactAdd = 'isContactAdd';
   static const String key_isCalenterEventAdd = 'isCalenterEventAdd';
   static const String param_rawJson = 'rawJson';
+
+  
   
 }
 
@@ -338,6 +351,7 @@ class AppDatabase{
   static final String tbl_assessment_meta_field_assessment_obtainmark = 'assessment_obtainmark';
   static final String tbl_assessment_meta_field_assessment_result = 'assessment_result';
   static final String tbl_assessment_meta_field_assessment_comment = 'assessment_comment';
+  static final String tbl_assessment_meta_field_assessment_result_Is_pending = 'assessment_result_Is_pending';
 
         
 

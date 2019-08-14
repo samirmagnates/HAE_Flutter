@@ -12,7 +12,6 @@ import '../Utils/AppUtils.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'AudioPlayer.dart';
 import 'VideoPlayer.dart';
-//import 'VideoPlayer1.dart';
 import '../Screen/YoutubeVideoPlayer.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
@@ -20,13 +19,11 @@ import 'package:image_picker/image_picker.dart';
 import '../Screen/AudioRecorder.dart';
 import '../Screen/ResultScreen.dart';
 import '../Model/Assessment.dart';
-import 'package:image/image.dart' as Im; 
 import 'package:flutter_video_compress/flutter_video_compress.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
-import 'package:flutter/foundation.dart';
-
+import 'package:hea/Utils/DbManager.dart';
 
 
 class StartAssessment extends StatefulWidget {
@@ -44,33 +41,34 @@ class StartAssessment extends StatefulWidget {
 
 class _StartAssessmentState extends State<StartAssessment> {
 
-    static final GlobalKey<ScaffoldState> _scaffoldKeyStartAssess = new GlobalKey<ScaffoldState>();  
-    TextEditingController txtAnswer = TextEditingController();
-    List<AssessmentTasks> arrAssessmentTask;
-    AssessmentMetaData assessmentMetaData;
-    List<String> arrSelectedOption = List<String>();
-    List<QuestionOptions> arrTaskOption = List<QuestionOptions>();
-    AssessmentTasks currentAssessmentTask;
-    Assessment assessment;
-    int totalTask;
-    int currentTaskIndex;
-    String noDataMessage;
-    String candidateName = '';
-    bool _isEndAssessmentTapped = false;
-    bool _isLoading = false;
+  static final GlobalKey<ScaffoldState> _scaffoldKeyStartAssess = new GlobalKey<ScaffoldState>();  
+  TextEditingController txtAnswer = TextEditingController();
+  List<AssessmentTasks> arrAssessmentTask;
+  AssessmentMetaData assessmentMetaData;
+  List<String> arrSelectedOption = List<String>();
+  List<QuestionOptions> arrTaskOption = List<QuestionOptions>();
+  AssessmentTasks currentAssessmentTask;
+  Assessment assessment;
+  int totalTask;
+  int currentTaskIndex;
+  String noDataMessage;
+  String candidateName = '';
+  bool _isEndAssessmentTapped = false;
+  bool _isLoading = false;
 
+  AudioRecorder audiorecorder;
 
-    // for camera redod
+  // for camera redod
 
-    //bool _isLoading = false;
-    bool _isMaxDuration = false;
-    String currentAssessmentUuid;
-    ChewieController _chewieController;
-    VideoPlayerController _videoPlayerController;
-    final _flutterVideoCompress = FlutterVideoCompress();
-    Subscription _subscription;
+  //bool _isLoading = false;
+  bool _isMaxDuration = false;
+  //String currentAssessmentUuid;
+  ChewieController _chewieController;
+  VideoPlayerController _videoPlayerController;
+  final _flutterVideoCompress = FlutterVideoCompress();
+  Subscription _subscription;
 
-    final _loadingStreamController = StreamController<bool>.broadcast();
+  final _loadingStreamController = StreamController<bool>.broadcast();
   @override
   void initState() {
     // TODO: implement initState
@@ -164,6 +162,8 @@ class _StartAssessmentState extends State<StartAssessment> {
 
   @override
   Widget build(BuildContext context) {
+
+
     return Scaffold(
       key: _scaffoldKeyStartAssess,
       appBar: AppBar(
@@ -176,7 +176,7 @@ class _StartAssessmentState extends State<StartAssessment> {
             onPressed: () async {
               try {
                 final String  assessorPath =  await AppUtils.getAssessorPath();
-                await AppUtils.deleteLocalFolder('$assessorPath/${this.assessmentMetaData.assessmentUuid}');
+                await AppUtils.deleteLocalFolder('$assessorPath/${this.assessment.ASSESSMENT_UUID}');
               } catch (e){
                 AppUtils.onPrintLog('back res >>> ${e.toString()}');
               }
@@ -393,7 +393,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   }
   
   goToResultScreen() async {
-    
+    audiorecorder = null;
     final result = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => ResultScreen(resMetadata: this.assessmentMetaData,resAssessmentTask: this.arrAssessmentTask,resAssessment: this.assessment)));
    AppUtils.onPrintLog("pop  >> 12");
     Navigator.pop(context,result);
@@ -545,8 +545,11 @@ class _StartAssessmentState extends State<StartAssessment> {
   /// Pass button is use when task is senario base like image,audio,video
   /// As per candidate answer assessor diside pass or fail
   void clickPassFail(bool isPass) async{
+      
+      bool isGoAhed = true;
       String result = isPass?'pass':'fail';
       if(this.currentAssessmentTask.result == null || this.currentAssessmentTask.result.isEmpty){
+        AssessmentTasks task = await DBManager.db.getAssessementsTask(this.currentAssessmentTask.assessmentTaskUuid,this.currentAssessmentTask.assessmentUuid, this.currentAssessmentTask.assessorUuid);
         switch (this.currentAssessmentTask.assessmentTaskType) {
         case QuestionType.question_imageViewAnswer:
               setState(() {
@@ -569,16 +572,36 @@ class _StartAssessmentState extends State<StartAssessment> {
               });
           break;
           case QuestionType.question_imageCaptureAnswer:
-                setState(() {
+                if(this.currentAssessmentTask.assessmentTaskLocalFile == null || this.currentAssessmentTask.assessmentTaskLocalFile.isEmpty){
+                    isGoAhed = false;
+                    AppUtils.showInSnackBar(_scaffoldKeyStartAssess, AppMessage.kError_captureImage);
+                } else {
+                  setState(() {
                     this.currentAssessmentTask.result = result;
                     this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
                 });
+              }
+                
+                
           break;
           case QuestionType.question_audioRecordAnswer:
-              setState(() {
+              
+              if(audiorecorder.isRecorded != true ){
+                isGoAhed = false;
+                AppUtils.showInSnackBar(_scaffoldKeyStartAssess, AppMessage.kError_recoredAudio);
+              } else {
+                setState(() {
                   this.currentAssessmentTask.result = result;
                   this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
-              });
+                });
+              }
+              /*if(task.assessmentTaskLocalFile == null || task.assessmentTaskLocalFile.isEmpty){
+                
+              } else {
+                
+              }*/
+              
+              
           break;
           case QuestionType.question_videoRecordAnswer:
               if(_videoPlayerController != null){
@@ -590,15 +613,23 @@ class _StartAssessmentState extends State<StartAssessment> {
                 //_chewieController.dispose();
                 //_chewieController = null;
               }
-              setState(() {
+              if(this.currentAssessmentTask.assessmentTaskLocalFile == null || this.currentAssessmentTask.assessmentTaskLocalFile.isEmpty){
+                    isGoAhed = false;
+                    AppUtils.showInSnackBar(_scaffoldKeyStartAssess, AppMessage.kError_recoredVideo);
+                } else {
+                  setState(() {
                   this.currentAssessmentTask.result = result;
                   this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
-              });
+                });
+              }
+              
+              
           break;
 
         default:
       }
     }
+    if(isGoAhed == true){
       this.currentTaskIndex++;
       if(this.currentAssessmentTask.assessmentTaskType == QuestionType.question_textAnswer || this.currentAssessmentTask.assessmentTaskType == QuestionType.question_intgerAnswer){
           this.txtAnswer.text = '';
@@ -613,6 +644,8 @@ class _StartAssessmentState extends State<StartAssessment> {
         //Navigator.of(context).push(MaterialPageRoute(builder: (context) => ResultScreen(resMetadata: this.assessmentMetaData,resAssessmentTask: this.arrAssessmentTask,resCandidate: this.candidate)));
         goToResultScreen();
       }
+    }
+      
     }
 
   /// questionOptionAnswer return widget for single, multiple and bool selection type.
@@ -1410,7 +1443,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                 constraints: BoxConstraints(
                                   minHeight: 100
                                 ),
-                                child: CustomAudioPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl,assessmentUuid:this.assessmentMetaData.assessmentUuid),
+                                child: CustomAudioPlayer(url:this.currentAssessmentTask.assessmentTaskAssetUrl,assessmentUuid:this.assessment.ASSESSMENT_UUID),
                               )
                             )
                           ],
@@ -1606,7 +1639,7 @@ class _StartAssessmentState extends State<StartAssessment> {
 
    Future<String> compressImage(File image) async {
       String docDirectory = await AppUtils.getDocumentPath();
-      String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
+      String taskFolder = await AppUtils.getAssessmentPath(this.assessment.ASSESSMENT_UUID);
     //if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
       final file = new File('$docDirectory/$taskFolder/${this.currentAssessmentTask.assessmentTaskLocalFile}');
       if (await file.exists()){
@@ -1615,15 +1648,16 @@ class _StartAssessmentState extends State<StartAssessment> {
       }
     //}
     
-    await AppUtils.getCreateFolder(taskFolder);
+    //await AppUtils.getCreateFolder(taskFolder);
     
     String fileExtesion = 'jpeg';
     if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
         List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
         fileExtesion = arrExtention.first;
     } 
-    final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
-    final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+    //final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+    //final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+    final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}.$fileExtesion';
     var res2 = await image.copy('$docDirectory/$filePath');
     AppUtils.onPrintLog('res2 >> $res2');
     image.delete();
@@ -1964,7 +1998,7 @@ class _StartAssessmentState extends State<StartAssessment> {
   /// pass and fail button for submit resut and  go to next task
 
      getAudioFilePath(AssessmentTasks task) async {
-      String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
+      String taskFolder = await AppUtils.getAssessmentPath(this.assessment.ASSESSMENT_UUID);
       String docDirectory = await AppUtils.getDocumentPath();
       //String pathFolder =  await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
 
@@ -1985,8 +2019,9 @@ class _StartAssessmentState extends State<StartAssessment> {
       if(Platform.isIOS){
         fileExtesion = 'm4a'; 
       }
-      final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
-      final String filePath = '$taskFolder/${task.assessmentTaskUuid}_$currentTime.$fileExtesion';
+      //final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+      //final String filePath = '$taskFolder/${task.assessmentTaskUuid}_$currentTime.$fileExtesion';
+      final String filePath = '$taskFolder/${task.assessmentTaskUuid}.$fileExtesion';
 
       /*final file = new File('$docDirectory/$filePath');
       if ( await file.exists()){
@@ -2007,6 +2042,8 @@ class _StartAssessmentState extends State<StartAssessment> {
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if(snapshot.hasData){
           String filePath = snapshot.data as String;
+
+          audiorecorder = AudioRecorder(task:this.currentAssessmentTask,assessmentUuid:this.assessment.ASSESSMENT_UUID,filePath: filePath);
           getPermision(Permission.microphone);
           return Expanded(
             child: Container(
@@ -2089,7 +2126,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                         child: Center(
                                           child: _showCircularProgress(),
                                         ),
-                                      ):AudioRecorder(task:this.currentAssessmentTask,assessmentUuid:this.assessmentMetaData.assessmentUuid,filePath: filePath),
+                                      ):audiorecorder
                                     )
                                   )
                                 ],
@@ -2382,7 +2419,7 @@ class _StartAssessmentState extends State<StartAssessment> {
                                         _isLoading = true;
                                       });
                                       if (videoFile != null && mounted) {
-                                        String taskFolder = await AppUtils.getAssessmentPath(this.assessmentMetaData.assessmentUuid);
+                                        String taskFolder = await AppUtils.getAssessmentPath(this.assessment.ASSESSMENT_UUID);
                                         if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
                                           
                                           final file = new File('$docDirectory/$taskFolder/${this.currentAssessmentTask.assessmentTaskLocalFile}');
@@ -2393,21 +2430,22 @@ class _StartAssessmentState extends State<StartAssessment> {
                                         }
                                         
                                         
-                                        await AppUtils.getCreateFolder(taskFolder);
+                                        //await AppUtils.getCreateFolder(taskFolder);
                                         //String pathFolder = await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
                                         String fileExtesion = 'mp4';
                                         if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
                                             List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
                                             fileExtesion = arrExtention.first;
                                         } 
-                                        final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
-                                        final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+                                        //final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+                                        //final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+                                        final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}.$fileExtesion';
 
                                         String fileFullPath = '$docDirectory/$filePath'; 
                                         var res2 = await videoFile.copy(fileFullPath);
                                         AppUtils.onPrintLog('res2 >> $res2');
-                                        //videoFile.delete();
-
+                                         var del = await videoFile.delete();
+                                        AppUtils.onPrintLog('del >> $del');
                                         setState(() {
                                           this.currentAssessmentTask.assessmentTaskLocalFile = filePath;
                                           this.arrAssessmentTask[this.currentTaskIndex] = this.currentAssessmentTask;
@@ -2608,7 +2646,7 @@ Widget getCameraRecorder() {
                             _isLoading = true;
                             _loadingStreamController.sink.add(true);
                             
-                            String taskFolder = await AppUtils.getAssessmentPath(this.currentAssessmentUuid);
+                            String taskFolder = await AppUtils.getAssessmentPath(this.assessment.ASSESSMENT_UUID);
                             if(this.currentAssessmentTask.assessmentTaskLocalFile.isNotEmpty){
                               
                               final file = new File('$docDirectory/$taskFolder/${this.currentAssessmentTask.assessmentTaskLocalFile}');
@@ -2618,15 +2656,16 @@ Widget getCameraRecorder() {
                               }
                             }
                             
-                            await AppUtils.getCreateFolder(taskFolder);
+                            //await AppUtils.getCreateFolder(taskFolder);
                             //String pathFolder = await AppUtils.getLocalPath(this.assessmentMetaData.assessmentUuid);
                             String fileExtesion = 'mp4';
                             if(this.currentAssessmentTask.assessmentTaskUploadFormat != null && this.currentAssessmentTask.assessmentTaskUploadFormat.isNotEmpty){
                                 List<String> arrExtention = this.currentAssessmentTask.assessmentTaskUploadFormat.split(',');
                                 fileExtesion = arrExtention.first;
                             } 
-                            final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
-                            final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+                            //final String currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+                            //final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}_$currentTime.$fileExtesion';
+                            final String filePath = '$taskFolder/${this.currentAssessmentTask.assessmentTaskUuid}.$fileExtesion';
 
                             String fileFullPath = '$docDirectory/$filePath'; 
 
@@ -2639,6 +2678,8 @@ Widget getCameraRecorder() {
                                  if(info != null && info.file != null){
                                   //await _file.delete();
                                   await info.file.copy(fileFullPath);
+                                  await info.file.delete();
+                                  await videoFile.delete();
                                   if(_videoPlayerController != null){
                                     //_videoPlayerController.dispose();
                                     //_videoPlayerController = null;

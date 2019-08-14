@@ -41,6 +41,12 @@ class AssessmentTasks {
       this.assessorUuid}
   );
 
+  /*
+  convert json to AssessmentTasks class 
+  if specific value is not exist than set default value
+  return AssessmentTasks object.
+  */
+
   AssessmentTasks.fromJSON(Map<String, dynamic> jsonRes) {
     assessmentTaskUuid = jsonRes['assessment_task_uuid'];
     assessmentTaskType = jsonRes['assessment_task_type'];
@@ -69,6 +75,12 @@ class AssessmentTasks {
     assessorUuid = jsonRes['assessor_uuid'] != null ? jsonRes['assessor_uuid']:'';
     
   }
+  /*
+  AssessmentTasks is question with option or senario 
+  convert AssessmentTasks class to map
+  if specific value is not exist than set default value
+  return Map<String:dynamic>
+  */
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();

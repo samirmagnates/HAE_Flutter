@@ -10,6 +10,7 @@ class AssessmentMetaData {
   String assessmentObtainmark;
   String assessmentResult;
   String assessmentComment;
+  int assessmentPending;
 
 
 
@@ -24,7 +25,14 @@ class AssessmentMetaData {
       this.assessmentPassmark,
       this.assessmentObtainmark,
       this.assessmentResult,
-      this.assessmentComment});
+      this.assessmentComment,
+      this.assessmentPending});
+
+  /*
+  convert json to AssessmentMetaData class 
+  if specific value is not exist than set default value
+  return AssessmentMetaData object.
+  */
 
   AssessmentMetaData.fromJSON(Map<String, dynamic> json) {
     assessorUuid = json['assessor_uuid'];
@@ -37,9 +45,15 @@ class AssessmentMetaData {
     assessmentPassmark = json['assessment_passmark'];
     assessmentObtainmark = json['assessment_obtainmark'] != null ? json['assessment_obtainmark']:'';
     assessmentResult = json['assessment_result'] != null ? json['assessment_result']:'';
-    assessmentComment = json['assessment_comment'] != null ? json['assessment_commnet']:'';
+    assessmentComment = json['assessment_comment'] != null ? json['assessment_comment']:'';
+    assessmentPending = json['assessment_result_Is_pending'] != null ? json['assessment_result_Is_pending']:0;
   }
 
+  /*
+  convert AssessmentMetaData class to map
+  if specific value is not exist than set default value
+  return Map<String:dynamic>
+  */
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['assessor_uuid'] = this.assessorUuid;
@@ -53,6 +67,7 @@ class AssessmentMetaData {
     data['assessment_obtainmark'] = this.assessmentObtainmark;
     data['assessment_result'] = this.assessmentResult;
     data['assessment_comment'] = this.assessmentComment;
+    data['assessment_result_Is_pending'] = this.assessmentPending;
     return data;
   }
 }

@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart' as prefix0;
-import 'package:hea/Model/AssessmentTasks.dart';
-import 'package:hea/Model/AssessmentMetaData.dart';
-import 'package:hea/Utils/AppUtils.dart';
-import 'package:hea/Model/Assessment.dart';
-import 'package:hea/Utils/DbManager.dart';
+
+import '../Model/Assessment.dart';
+import '../Model/AssessmentMetaData.dart';
+import '../Model/AssessmentTasks.dart';
+import '../Utils/AppUtils.dart';
+import '../Utils/DbManager.dart';
 class ResultScreen extends StatefulWidget {
   ResultScreen({Key key,@required this.resMetadata,@required this.resAssessmentTask,@required this.resAssessment}):super(key:key);
   AssessmentMetaData resMetadata;
@@ -26,9 +28,10 @@ class _ResultScreenState extends State<ResultScreen> {
     Assessment assessment;
     bool _isEndAssessmentTapped = false;
     bool _isLoading = false;
-    
+    bool _isPandingResult = false;
     bool isMarkCalaculating = true;
     int obtainMark = 0;
+    final pandingStreamController = StreamController<bool>.broadcast();
     @override
   void initState() {
     // TODO: implement initState
@@ -43,6 +46,8 @@ class _ResultScreenState extends State<ResultScreen> {
     if(widget.resAssessmentTask != null){
         this.arrAssessmentTask = widget.resAssessmentTask;
     }
+
+    pandingStreamController.sink.add(false); 
 
     calcualteMark();
   }
@@ -212,7 +217,7 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
             ),
             Container(
-                height: 170,
+                height: 130,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   boxShadow: [BoxShadow(
@@ -275,15 +280,46 @@ class _ResultScreenState extends State<ResultScreen> {
                       )
                     ),
                     SizedBox(
-                      height: 30,
+                      height: 10,
                     ),
                     Container(
                       height: 50,
+                      width: MediaQuery.of(context).size.width,
                       child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        Container(
+                        StreamBuilder(
+                          stream: pandingStreamController.stream,
+                          builder: (context, snapshot){
+                            return Checkbox(
+                              value: _isPandingResult,
+                              onChanged: (bool value){
+                                _isPandingResult = value;
+                                pandingStreamController.sink.add(value);
+                              },
+                            );
+                          },
+                        ),
+                        Flexible(
+                          child: Container(
+                          width: MediaQuery.of(context).size.width,
+                          child :Center(
+                              child: Text(
+                                  'Please mark as Pending and add your comments above',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontFamily: ThemeFont.font_pourceSanPro,
+                                      color: ThemeColor.theme_blue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15.0),
+                                ),
+                            )
+                        ),
+                        )
+                         
+                        /*Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.all(Radius.circular(10.0)),
                             color: this.assessmentResult == 'fail'?ThemeColor.ans_Red:ThemeColor.theme_blue
@@ -339,13 +375,13 @@ class _ResultScreenState extends State<ResultScreen> {
                                 ),
                             ),
                           ),
-                        )
+                        )*/
                       ],
                       
                     ),
                     ),
                     SizedBox(
-                      height: 30,
+                      height: 10,
                     ),
                   ],
                 )
@@ -435,10 +471,15 @@ class _ResultScreenState extends State<ResultScreen> {
     });
 
     this.assessment.IS_END = 1;
+    int pandingResult = 0;
+    if(this._isPandingResult == true){
+      pandingResult = 1;
+    }
     await DBManager.db.updateAssessmetns(this.assessment);
     this.assessmentMetaData.assessmentPassmark = '$obtainMark';
     this.assessmentMetaData.assessmentResult = this.assessmentResult;
     this.assessmentMetaData.assessmentComment = this.comment;
+    this.assessmentMetaData.assessmentPending = pandingResult;
     await DBManager.db.updateAssessmetnsMetaData(this.assessmentMetaData);
 
     arrAssessmentTask.forEach((task)async {

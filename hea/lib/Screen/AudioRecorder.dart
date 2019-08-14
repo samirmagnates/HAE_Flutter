@@ -1,16 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../Model/AssessmentTasks.dart';
-//import 'package:medcorder_audio/medcorder_audio.dart';
-import 'package:audioplayer/audioplayer.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import '../Utils/AppUtils.dart';
-import 'package:intl/intl.dart' show DateFormat;
 import 'package:intl/date_symbol_data_local.dart';
-import 'dart:async';
-import 'dart:async';
-import 'dart:io';
-import 'dart:typed_data';
-import 'package:path/path.dart' as path;
+import '../Model/AssessmentTasks.dart';
+import '../Utils/AppUtils.dart';
 
 class AudioRecorder extends StatefulWidget {
   @override
@@ -20,7 +14,8 @@ class AudioRecorder extends StatefulWidget {
   AssessmentTasks task;
   String assessmentUuid;
   String filePath;
-  
+
+  bool isRecorded = false;
   _AudioRecorderState createState() => _AudioRecorderState();
 }
 
@@ -42,16 +37,14 @@ class _AudioRecorderState extends State<AudioRecorder> {
   //String _recorderTxt = '00:00:00';
   //String _playerTxt = '00:00:00';
   double _dbLevel;
-
   double recorederPosition = 0.0;
-
   get recordDurationText =>
       recorederPosition != null ? Duration(milliseconds:recorederPosition.toInt()).toString().split('.').first : '';
 
   double slider_current_position = 0.0;
   double max_duration = 0.0;
   double position = 0.0;
-
+  
   get positionText =>
       position != null ? Duration(milliseconds:position.toInt()).toString().split('.').first : '';
   get durationText =>
@@ -69,8 +62,6 @@ class _AudioRecorderState extends State<AudioRecorder> {
     initializeDateFormatting();
   }
 
-  
-
   @override
   void setState(fn) {
     // TODO: implement setState
@@ -83,39 +74,12 @@ class _AudioRecorderState extends State<AudioRecorder> {
   void dispose() {
     // TODO: implement dispose
     super.dispose();
-    
     this.stopPlayer();
     this._stopRecord();
     flutterSound = null;
-    //audioModule.stopRecord();
-    //audioModule.stopPlay();
-    //audioModule = null;
   }
 
-  /*Future _initSettings() async {
-    final String result = await audioModule.checkMicrophonePermissions();
-    if (result == 'OK') {
-      await audioModule.setAudioSettings();
-      setState(() {
-        canRecord = true;
-      });
-    }
-    return;
-  }*/
-
-
 Future _startRecord() async {
-    /*try {
-      await audioModule.setAudioSettings();
-      final String result = await audioModule.startRecord(file);
-      setState(() {
-        isRecord = true;
-      });
-      AppUtils.onPrintLog('startRecord: ' + result);
-    } catch (e) {
-      file = "";
-      AppUtils.onPrintLog('startRecord: fail >> ${e.toString()}');
-    }*/
     try {
 
       appDocumentPath = await AppUtils.getDocumentPath();
@@ -152,19 +116,7 @@ Future _startRecord() async {
   }
 
   Future _stopRecord() async {
-    /*try {
-      final String result = await audioModule.stopRecord();
-      AppUtils.onPrintLog('stopRecord: ' + result);
-      setState(() {
-        isRecord = false;
-        isAlredyRecorde = true;
-      });
-    } catch (e) {
-      AppUtils.onPrintLog('stopRecord: fail');
-      setState(() {
-        isRecord = false;
-      });
-    }*/
+    
     try {
       String result = await flutterSound.stopRecorder();
       AppUtils.onPrintLog('stopRecorder: $result');
@@ -182,20 +134,14 @@ Future _startRecord() async {
         this._isRecording = false;
         this.isAlredyRecorde = true;
       });
+      widget.isRecorded = true;
     } catch (err) {
       AppUtils.onPrintLog('stopRecorder error: $err');
     }
   }
 
   Future startPlayer() async {
-    /*if (isPlay) {
-      await audioModule.stopPlay();
-    } else {
-      await audioModule.startPlay({
-        "file": file,
-        "position": 0.0,
-      });
-    }*/
+    
     String path = await flutterSound.startPlayer(this.file);
     await flutterSound.setVolume(1.0);
     AppUtils.onPrintLog('startPlayer: $path');
@@ -214,9 +160,7 @@ Future _startRecord() async {
               onComplete();
               
             }
-
-          
-          /*DateTime date = new DateTime.fromMillisecondsSinceEpoch(
+        /*DateTime date = new DateTime.fromMillisecondsSinceEpoch(
               e.currentPosition.toInt(),
               isUtc: true);
           String txt = DateFormat('hh:mm:ss', 'en_GB').format(date);*/
@@ -270,36 +214,7 @@ Future _startRecord() async {
     AppUtils.onPrintLog('seekToPlayer: $result');
   }
 
-  /*void _onEvent(dynamic event) {
-    if (event['code'] == 'recording') {
-      double power = event['peakPowerForChannel'];
-      setState(() {
-        recordPower = (60.0 - power.abs().floor()).abs();
-        recordPosition = event['currentTime'];
-        recordedDuration = Duration(seconds: recordPosition.toInt());
-        position =  Duration(seconds: 0);
-        duration =  Duration(seconds: recordPosition.toInt());
-      });
-    }
-    if (event['code'] == 'playing') {
-      String url = event['url'];
-      AppUtils.onPrintLog('url >>> $url');
-      setState(() {
-        playPosition = event['currentTime'];
-        fileDuration = event['duration'];
-        position =  Duration(seconds: playPosition.toInt());
-        duration =  Duration(seconds: fileDuration.toInt());
-        isPlay = true;
-      });
-    }
-    if (event['code'] == 'audioPlayerDidFinishPlaying') {
-      setState(() {
-        playPosition = 0.0;
-        position =  Duration(seconds: 0);
-        isPlay = false;
-      });
-    }
-  }*/
+  
 
   @override
   Widget build(BuildContext context) {
@@ -472,3 +387,5 @@ Future _startRecord() async {
           ),
     );
 }
+
+

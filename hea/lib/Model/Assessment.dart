@@ -61,7 +61,7 @@ class Assessment{
       this.IS_UPLOADED,
       this.IS_END
   });
-
+  // get value form the assessment json by key 
   getValue(Map<String, dynamic> json,String key)  {
     AppUtils.onPrintLog(json);
     AppUtils.onPrintLog(key);
@@ -79,6 +79,11 @@ class Assessment{
     //return json[key]?json[key]:json[key.toLowerCase()]?json[key.toLowerCase()]:'';
   }
 
+  /*
+  convert json to Assessment class 
+  if specific value is not exist than set default value
+  return Assessment object.
+  */
   Assessment.fromJSON(Map<String, dynamic> json){
       String formattedDate = '';
       String strTime = '';
@@ -119,7 +124,11 @@ class Assessment{
       
   }
     
-
+  /*
+  convert Assessment class to map
+  if specific value is not exist than set default value
+  return Map<String:Dynamic>
+  */
   Map<String,dynamic> toJson() => {'assessment_uuid': ASSESSMENT_UUID, 'assessment_appointment': ASSESSMENT_APPOINTMENT, 'assessment_assessor_first': ASSESSMENT_ASSESSOR_FIRST,
     'assessment_assessor_last':ASSESSMENT_ASSESSOR_LAST,'assessment_candidate_first':ASSESSMENT_CANDIDATE_FIRST,'assessment_candidate_last':ASSESSMENT_CANDIDATE_LAST,
     'assessment_candidate_email':ASSESSMENT_CANDIDATE_EMAIL,'assessment_candidate_number':ASSESSMENT_CANDIDATE_NUMBER,'assessment_address_company':ASSESSMENT_ADDRESS_COMPANY,
